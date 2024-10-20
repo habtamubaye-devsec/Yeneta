@@ -163,3 +163,4 @@ const logout = asyncHandler(async (req, res) => {
 });
 
 export { registerUser, verifyOtp, resendOtp, login, me, logout };
+// Auto change for Sun Oct 20 2024 03:00:00 GMT+0300 (East Africa Time)
