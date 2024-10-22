@@ -59,3 +59,5 @@ const userSchema = mongoose.Schema(
 
 const User = mongoose.model("User", userSchema);
 export default User;
+
+// Auto change for Tue Oct 22 2024 03:00:00 GMT+0300 (East Africa Time)
