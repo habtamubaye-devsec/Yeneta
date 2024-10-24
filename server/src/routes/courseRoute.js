@@ -40,3 +40,5 @@ router.patch("/:id/reject", protect, authorizeRoles("admin", "superadmin"), reje
 router.delete("/:id", protect, authorizeRoles("instructor", "admin", "superadmin"), deleteCourse);
 
 export default router;
+
+// Auto change for Thu Oct 24 2024 03:00:00 GMT+0300 (East Africa Time)
