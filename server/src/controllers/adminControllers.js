@@ -145,3 +145,5 @@ export const deleteInstructor = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
+// Auto change for Mon Oct 28 2024 03:00:00 GMT+0300 (East Africa Time)
