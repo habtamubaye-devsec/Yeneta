@@ -147,3 +147,4 @@ export const deleteInstructor = async (req, res) => {
 };
 
 // Auto change for Mon Oct 28 2024 03:00:00 GMT+0300 (East Africa Time)
+// Auto change for Thu Oct 31 2024 03:00:00 GMT+0300 (East Africa Time)
