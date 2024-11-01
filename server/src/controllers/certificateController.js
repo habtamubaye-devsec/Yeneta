@@ -146,3 +146,5 @@ export const generateCertificate = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
+// Auto change for Fri Nov 01 2024 03:00:00 GMT+0300 (East Africa Time)
