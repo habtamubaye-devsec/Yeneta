@@ -22,3 +22,5 @@ const storage = new CloudinaryStorage({
 const upload = multer({ storage });
 
 export { cloudinary, upload };
+
+// Auto change for Sat Nov 02 2024 03:00:00 GMT+0300 (East Africa Time)
