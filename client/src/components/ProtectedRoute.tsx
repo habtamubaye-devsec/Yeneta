@@ -1,25 +1,32 @@
-import { Navigate } from 'react-router-dom';
-import { useAuth, UserRole } from '@/contexts/AuthContext';
+import { Navigate, Outlet } from "react-router-dom";
+import { useSelector } from "react-redux";
+import type { RootState } from "../app/store";
 
 interface ProtectedRouteProps {
-  children: React.ReactNode;
-  allowedRoles?: UserRole[];
+  allowedRoles?: string[];
+  children?: React.ReactNode;
 }
 
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
-  children, 
-  allowedRoles 
-}) => {
-  const { user, isAuthenticated } = useAuth();
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, children }) => {
+  const { user, isAuthenticated, loading } = useSelector((state: RootState) => state.auth);
 
+  if (loading) {
+    return <div className="text-center text-lg mt-10">Loading...</div>;
+  }
+
+  // If user not logged in
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
+    console.log(allowedRoles, user?.role)
+  // If role-based protection is used
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {
-    // Redirect to their appropriate dashboard
-    return <Navigate to={`/${user.role}`} replace />;
+    return <Navigate to="/unauthorized" replace />;
   }
 
-  return <>{children}</>;
+  // Render children or nested routes
+  return children ? <>{children}</> : <Outlet />;
 };
+
+export default ProtectedRoute;

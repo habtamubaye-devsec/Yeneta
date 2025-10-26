@@ -3,10 +3,6 @@ import dotenv from 'dotenv';
 
 dotenv.config(); // Load environment variables from .env
 
-// Check that env variables are loaded
-console.log('EMAIL_USER:', process.env.EMAIL_USER);
-console.log('EMAIL_PASSWORD:', process.env.EMAIL_PASSWORD);
-
 // Create transporter for Gmail
 const transporter = nodemailer.createTransport({
   service: 'gmail',

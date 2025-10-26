@@ -1,60 +1,79 @@
-import express from 'express'
+import express from "express";
 import passport from "passport";
 import jwt from "jsonwebtoken";
-import { registerUser, resendOtp, verifyOtp, login, logout } from '../controllers/authControllers.js'
+import {
+  registerUser,
+  resendOtp,
+  verifyOtp,
+  login,
+  logout,
+  me,
+} from "../controllers/authControllers.js";
 
-const router = express.Router()
+const router = express.Router();
 
+// ========================
+// GOOGLE AUTH
+// ========================
+router.get("/google", passport.authenticate("google", { scope: ["profile", "email"]}));
 
-// Google
-router.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }));
-
-router.get("/google/callback",
-  passport.authenticate("google", { failureRedirect: "/login" }),
+router.get(
+  "/google/callback",
+  passport.authenticate("google", { failureRedirect: "/login", session: false }),
   (req, res) => {
-    // Successful login
-     const token = jwt.sign(
-      { id: req.user._id, email: req.user.email },
+    const token = jwt.sign( 
+      { id: req.user._id, email: req.user.email, role: req.user.role },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
 
-    // Store JWT in HTTP-only cookie
+    // Secure HTTP-only cookie
     res.cookie("token", token, {
-      httpOnly: true,        // JS can't access this cookie
-      secure: process.env.NODE_ENV === "production", // HTTPS only in production
-      sameSite: "strict"
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
     });
-    res.redirect("/dashboard"); // or send JWT cookie here
+
+    // Redirect to frontend dashboard
+    res.redirect('http://localhost:5173/student');
   }
 );
 
-// GitHub
+// ========================
+// GITHUB AUTH
+// ========================
 router.get("/github", passport.authenticate("github", { scope: ["user:email"] }));
 
-router.get("/github/callback",
-  passport.authenticate("github", { failureRedirect: "/login" }),
+router.get(
+  "/github/callback",
+  passport.authenticate("github", { failureRedirect: "/login", session: false }),
   (req, res) => {
-     const token = jwt.sign(
-      { id: req.user._id, email: req.user.email },
+    const token = jwt.sign(
+      { id: req.user._id, email: req.user.email, role: req.user.role },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
 
-    // Store JWT in HTTP-only cookie
+    // Secure HTTP-only cookie
     res.cookie("token", token, {
-      httpOnly: true,        // JS can't access this cookie
-      secure: process.env.NODE_ENV === "production", // HTTPS only in production
-      sameSite: "strict"
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
     });
-    res.redirect("/dashboard"); // or send JWT cookie here
+
+    // Redirect to frontend dashboard
+    res.redirect('http://localhost:5173/student');
   }
 );
 
-router.post('/register', registerUser)
+// ========================
+// LOCAL AUTH ROUTES
+// ========================
+router.post("/register", registerUser);
 router.post("/verify-otp", verifyOtp);
-router.post("/resend-otp", resendOtp); 
-router.post("/login", login); 
-router.post("/logout", logout); 
+router.post("/resend-otp", resendOtp);
+router.post("/login", login);
+router.post("/logout", logout);
+router.get("/me", me);
 
-export default router
+export default router;

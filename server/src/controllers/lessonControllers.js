@@ -50,6 +50,8 @@ export const createLesson = async (req, res) => {
         position: allResources.length + 1,
       });
     });
+    console.log("📤 Uploaded files:", req.files);
+
 
     // 4️⃣ Create lesson
     const lesson = new Lesson({

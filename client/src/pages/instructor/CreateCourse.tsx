@@ -1,152 +1,220 @@
-import { useState } from 'react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import type { AppDispatch, RootState } from "@/redux/store";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { Card, Form, Input, Select, Button, Upload, message, Image, Spin } from "antd";
+import { UploadOutlined } from "@ant-design/icons";
+import { createCourse } from "@/features/courses/courseThunks";
+import { fetchCategories } from "@/features/categories/categoryThunks";
+
+const { Option } = Select;
 
 export default function CreateCourse() {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    category: '',
-    level: '',
-    price: '',
-    thumbnail: '',
-  });
+  const dispatch = useDispatch<AppDispatch>();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Validation
-    if (!formData.title || !formData.description || !formData.category) {
-      toast.error('Please fill in all required fields');
+  const { loading: courseLoading } = useSelector((state: RootState) => state.courses);
+  const { categories, loading: categoryLoading } = useSelector(
+    (state: RootState) => state.categories
+  );
+
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  const [form] = Form.useForm();
+
+  // ✅ Load categories from backend
+  useEffect(() => {
+    dispatch(fetchCategories());
+  }, [dispatch]);
+
+  // ✅ Handle file manually
+  const handleBeforeUpload = (file: File) => {
+    setFile(file);
+    setPreview(URL.createObjectURL(file));
+    return false;
+  };
+
+  // ✅ Submit form
+  const handleSubmit = async (values: any) => {
+    if (!file) {
+      message.error("Please upload a thumbnail image");
       return;
     }
 
-    toast.success('Course created successfully!');
-    navigate('/instructor/courses');
+    const formData = new FormData();
+    for (const [key, value] of Object.entries(values)) {
+      formData.append(key, value as string);
+    }
+    formData.append("thumbnail", file);
+
+    try {
+      await dispatch(createCourse(formData)).unwrap();
+      message.success("✅ Course created successfully!");
+      navigate("/instructor/courses");
+    } catch (error: any) {
+      message.error(error || "❌ Failed to create course.");
+    }
   };
+
+  if (categoryLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex justify-center items-center h-[60vh]">
+          <Spin size="large" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // ✅ Find selected category from list
+  const selectedCategoryObj = categories.find((cat) => cat._id === selectedCategory);
 
   return (
     <DashboardLayout>
       <div className="max-w-4xl mx-auto space-y-6">
         <div>
           <h1 className="text-3xl font-bold mb-2">Create New Course</h1>
-          <p className="text-muted-foreground">Share your knowledge with students worldwide</p>
+          <p className="text-gray-500">Share your knowledge with students worldwide.</p>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <Card>
-            <CardHeader>
-              <CardTitle>Course Details</CardTitle>
-              <CardDescription>Provide basic information about your course</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="title">Course Title *</Label>
-                <Input
-                  id="title"
-                  placeholder="e.g., Complete Web Development Bootcamp"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  required
-                />
-              </div>
+        <Card title="Course Details" bordered>
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={handleSubmit}
+            requiredMark="optional"
+          >
+            {/* Title */}
+            <Form.Item
+              label="Course Title"
+              name="title"
+              rules={[{ required: true, message: "Please enter the course title" }]}
+            >
+              <Input placeholder="e.g., Complete Web Development Bootcamp" />
+            </Form.Item>
 
-              <div className="space-y-2">
-                <Label htmlFor="description">Course Description *</Label>
-                <Textarea
-                  id="description"
-                  placeholder="Describe what students will learn in this course..."
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={5}
-                  required
-                />
-              </div>
+            {/* Description */}
+            <Form.Item
+              label="Course Description"
+              name="description"
+              rules={[{ required: true, message: "Please enter a description" }]}
+            >
+              <Input.TextArea placeholder="Describe what students will learn..." rows={5} />
+            </Form.Item>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="category">Category *</Label>
-                  <Select 
-                    value={formData.category} 
-                    onValueChange={(value) => setFormData({ ...formData, category: value })}
+            {/* Category + Subcategory */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Form.Item
+                label="Category"
+                name="category"
+                rules={[{ required: true, message: "Please select a category" }]}
+              >
+                <Select
+                  placeholder="Select category"
+                  onChange={(value) => setSelectedCategory(value)}
+                >
+                  {categories.map((cat) => (
+                    <Option key={cat._id} value={cat._id}>
+                      {cat.name}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+
+              <Form.Item
+                label="Subcategory"
+                name="subCategories"
+                rules={[{ required: true, message: "Please select a subcategory" }]}
+              >
+                <Select placeholder="Select subcategory" disabled={!selectedCategory}>
+                  {selectedCategoryObj?.subCategories?.length ? (
+                    selectedCategoryObj.subCategories.map((sub) => (
+                      <Option key={sub} value={sub}>
+                        {sub}
+                      </Option>
+                    ))
+                  ) : (
+                    <Option value="none" disabled>
+                      No subcategories available
+                    </Option>
+                  )}
+                </Select>
+              </Form.Item>
+            </div>
+
+            {/* Level */}
+            <Form.Item
+              label="Difficulty Level"
+              name="level"
+              rules={[{ required: true, message: "Please select difficulty level" }]}
+            >
+              <Select placeholder="Select level">
+                <Option value="beginner">Beginner</Option>
+                <Option value="intermediate">Intermediate</Option>
+                <Option value="advanced">Advanced</Option>
+              </Select>
+            </Form.Item>
+
+            {/* Price + Thumbnail */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+              <Form.Item
+                label="Price (USD)"
+                name="price"
+                rules={[{ required: true, message: "Please enter course price" }]}
+              >
+                <Input type="number" placeholder="49.99" min="0" step="0.01" />
+              </Form.Item>
+
+              <Form.Item
+                label="Course Thumbnail"
+                required
+                tooltip="Upload an image for your course"
+              >
+                <div className="flex items-center gap-4">
+                  <Upload
+                    beforeUpload={handleBeforeUpload}
+                    accept="image/*"
+                    showUploadList={false}
+                    maxCount={1}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="web">Web Development</SelectItem>
-                      <SelectItem value="mobile">Mobile Development</SelectItem>
-                      <SelectItem value="design">Design</SelectItem>
-                      <SelectItem value="data">Data Science</SelectItem>
-                      <SelectItem value="business">Business</SelectItem>
-                      <SelectItem value="marketing">Marketing</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                    <Button icon={<UploadOutlined />}>Click to Upload</Button>
+                  </Upload>
 
-                <div className="space-y-2">
-                  <Label htmlFor="level">Difficulty Level *</Label>
-                  <Select 
-                    value={formData.level} 
-                    onValueChange={(value) => setFormData({ ...formData, level: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select level" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="beginner">Beginner</SelectItem>
-                      <SelectItem value="intermediate">Intermediate</SelectItem>
-                      <SelectItem value="advanced">Advanced</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  {preview && (
+                    <Image
+                      src={preview}
+                      alt="Thumbnail Preview"
+                      width={80}
+                      height={80}
+                      style={{
+                        borderRadius: "8px",
+                        objectFit: "cover",
+                        border: "1px solid #ddd",
+                      }}
+                    />
+                  )}
                 </div>
+              </Form.Item>
+            </div>
+
+            <Form.Item>
+              <div className="flex justify-end gap-4 mt-6">
+                <Button onClick={() => navigate("/instructor")}>Cancel</Button>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={courseLoading}
+                  disabled={!file}
+                >
+                  Create Course
+                </Button>
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="price">Price (USD) *</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    placeholder="49.99"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    min="0"
-                    step="0.01"
-                    required
-                  />
-                  <p className="text-sm text-muted-foreground">Set to 0 for free courses</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="thumbnail">Thumbnail URL</Label>
-                  <Input
-                    id="thumbnail"
-                    type="url"
-                    placeholder="https://example.com/image.jpg"
-                    value={formData.thumbnail}
-                    onChange={(e) => setFormData({ ...formData, thumbnail: e.target.value })}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="flex justify-end gap-4 mt-6">
-            <Button type="button" variant="outline" onClick={() => navigate('/instructor')}>
-              Cancel
-            </Button>
-            <Button type="submit">Create Course</Button>
-          </div>
-        </form>
+            </Form.Item>
+          </Form>
+        </Card>
       </div>
     </DashboardLayout>
   );

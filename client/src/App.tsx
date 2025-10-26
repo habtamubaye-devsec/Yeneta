@@ -5,12 +5,12 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Provider } from "react-redux"; // ✅ Added Redux provider
 import { store } from "@/app/store"; // ✅ Import Redux store
 import { antdTheme } from "./config/antdTheme";
-import { ProtectedRoute } from "./components/ProtectedRoute";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 // ✅ Pages
-// import Index from "./pages/Index";
+import Index from "./pages/Index";
 import Login from "./pages/Login";
-// import Register from "./pages/Register";
+import Register from "./pages/Register";
 
 // // ✅ Student Pages
 // import StudentDashboard from "./pages/student/StudentDashboard";
@@ -20,11 +20,11 @@ import Login from "./pages/Login";
 // import Reviews from "./pages/student/Reviews";
 // import Profile from "./pages/student/Profile";
 
-// // ✅ Instructor Pages
-// import InstructorDashboard from "./pages/instructor/InstructorDashboard";
-// import InstructorCourses from "./pages/instructor/MyCourses";
-// import CreateCourse from "./pages/instructor/CreateCourse";
-// import ManageLessons from "./pages/instructor/ManageLessons";
+// ✅ Instructor Pages
+import InstructorDashboard from "./pages/instructor/InstructorDashboard";
+import InstructorCourses from "./pages/instructor/MyCourses";
+import CreateCourse from "./pages/instructor/CreateCourse";
+import ManageCourse from "./pages/instructor/ManageCourse";
 // import Feedback from "./pages/instructor/Feedback";
 // import Analytics from "./pages/instructor/Analytics";
 
@@ -57,9 +57,9 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               {/* Public routes */}
-              {/* <Route path="/" element={<Index />} /> */}
+              <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
-              {/* <Route path="/register" element={<Register />} /> */}
+              <Route path="/register" element={<Register />} />
 
               {/* Courses */}
               {/* <Route
@@ -130,7 +130,7 @@ const App = () => (
               /> */}
 
               {/* Instructor */}
-              {/* <Route
+              <Route
                 path="/instructor"
                 element={
                   <ProtectedRoute allowedRoles={["instructor"]}>
@@ -155,14 +155,14 @@ const App = () => (
                 }
               />
               <Route
-                path="/instructor/courses/:courseId/lessons"
+                path="/instructor/courses/:courseId"
                 element={
                   <ProtectedRoute allowedRoles={["instructor"]}>
-                    <ManageLessons />
+                    <ManageCourse />
                   </ProtectedRoute>
                 }
               />
-              <Route
+              {/* <Route
                 path="/instructor/feedback"
                 element={
                   <ProtectedRoute allowedRoles={["instructor"]}>

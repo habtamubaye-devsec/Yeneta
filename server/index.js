@@ -23,7 +23,10 @@ import geminiRoutes from './src/routes/geminiAiRoutes.js'
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: "http://localhost:5173", // frontend URL
+  credentials: true, // <-- allows cookies to be sent
+}));
 app.use(express.json());
 app.use(cookieParser());
 app.use(
@@ -49,7 +52,7 @@ app.use("/api/user", userRoutes);
 app.use("/api/courses", courseRoute);
 app.use("/api/courses", lessonRoutes);
 app.use("/api/enrollment", enrollmentRoutes);
-app.use("/api/category", categoryRoutes);
+app.use("/api/categories", categoryRoutes);
 app.use("/api/courses", reviewRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/gemini", geminiRoutes);

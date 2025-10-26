@@ -1,15 +1,34 @@
 import Course from "../models/Course.js";
 import Enrollment from "../models/Enrollment.js";
 import Earning from "../models/Earning.js";
-import bcyrpt from 'bcrypt'
+import cloudinary from "../utils/cloudinary.js";
 
-// Create a new course
+// ✅ Create a new course (with Cloudinary upload)
 const createCourse = async (req, res) => {
-  try {
-    const { title, description, category, price, thumbnailUrl } = req.body;
+   try {
+    console.log("Received body:", req.body);
+    console.log("Received file:", req.file);
 
-    if (!title || !description || !category) {
-      return res.status(400).json({ success: false, message: "Missing required fields" });
+    const { title, description, category, subCategories, price, level } = req.body;
+
+    if (!title || !description || !category || !subCategories) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields",
+      });
+    }
+
+    let thumbnailUrl = "";
+
+    if (req.file) {
+      const result = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder: "courses" },
+          (error, result) => (error ? reject(error) : resolve(result))
+        );
+        stream.end(req.file.buffer);
+      });
+      thumbnailUrl = result.secure_url;
     }
 
     const course = await Course.create({
@@ -17,32 +36,111 @@ const createCourse = async (req, res) => {
       title,
       description,
       category,
+      subCategories,
       price,
+      level,
       thumbnailUrl,
     });
 
-    res.status(201).json({ success: true, data: course });
+    res.status(201).json({
+      success: true,
+      data: course,
+      message: "Course created successfully",
+    });
   } catch (err) {
+    console.error("Create course error:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// Update course
+//UPDATE
 const updateCourse = async (req, res) => {
   try {
-    const course = await Course.findOneAndUpdate(
-      { _id: req.params.id, instructor: req.user._id },
-      req.body,
-      { new: true, runValidators: true }
-    );
+    console.log("Received body:", req.body);
+    console.log("Received file:", req.file);
+
+    const { title, description, category, subCategories, price, level } = req.body;
+
+    // Find course owned by instructor
+    const course = await Course.findOne({
+      _id: req.params.id,
+      instructor: req.user._id,
+    });
 
     if (!course) {
-      return res.status(404).json({ success: false, message: "Course not found or not owned by you" });
+      return res.status(404).json({
+        success: false,
+        message: "Course not found or not owned by you",
+      });
     }
 
-    res.json({ success: true, data: course });
+    // ✅ Update text fields if present
+    if (title) course.title = title;
+    if (description) course.description = description;
+    if (category) course.category = category;
+    if (subCategories)
+      course.subCategories = Array.isArray(subCategories)
+        ? subCategories
+        : subCategories.split(",");
+    if (price) course.price = price;
+    if (level) course.level = level;
+
+    // ✅ Handle Cloudinary thumbnail upload (if file included)
+    if (req.file) {
+      // Upload new thumbnail using Cloudinary stream
+      const result = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder: "courses" },
+          (error, result) => (error ? reject(error) : resolve(result))
+        );
+        stream.end(req.file.buffer);
+      });
+
+      // Replace the existing thumbnail URL
+      course.thumbnailUrl = result.secure_url;
+    }
+
+    // Save updates
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      message: "✅ Course updated successfully",
+      data: course,
+    });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    console.error("Update course error:", err);
+    res.status(500).json({
+      success: false,
+      message: err.message || "Failed to update course",
+    });
+  }
+};
+
+// PATCH /api/courses/:id/publish
+export const togglePublishStatus = async (req, res) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({ success: false, message: "Course not found" });
+    }
+
+    // Ensure there are at least 2 lessons before publishing
+    if (course.lessons.length < 2 && course.status !== "draft") {
+      return res.status(400).json({
+        success: false,
+        message: "You must have at least 2 lessons to publish this course.",
+      });
+    }
+
+    // Toggle status
+    course.status = course.status === "published" ? "draft" : "published";
+    await course.save();
+
+    res.json({ success: true, data: course });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 

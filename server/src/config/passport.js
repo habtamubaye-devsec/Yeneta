@@ -5,10 +5,7 @@ import crypto from "crypto"
 import User from "../models/userModel.js";
 import dotenv from "dotenv";
 
-dotenv.config(); // ✅ Make sure env variables are loaded
-
-console.log("Google Client ID:", process.env.GOOGLE_CLIENT_ID);
-console.log("Google Client Secret:", process.env.GOOGLE_CLIENT_SECRET);
+dotenv.config(); 
 
 // Serialize/deserialize
 passport.serializeUser((user, done) => done(null, user.id));
@@ -53,33 +50,41 @@ if (!process.env.GITHUB_CLIENT_ID || !process.env.GITHUB_CLIENT_SECRET) {
   console.warn("GitHub OAuth client ID/secret not set in .env");
 } else {
   passport.use(
-    new GitHubStrategy(
-      {
-        clientID: process.env.GITHUB_CLIENT_ID,
-        clientSecret: process.env.GITHUB_CLIENT_SECRET,
-        callbackURL: "/api/auth/github/callback",
-        scope: ["user:email"],
-      },
-      async (accessToken, refreshToken, profile, done) => {
-        try {
-          const email = profile.emails && profile.emails[0]?.value;
-          if (!email) return done(new Error("GitHub profile has no email"), null);
+  new GitHubStrategy(
+    {
+      clientID: process.env.GITHUB_CLIENT_ID,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET,
+      callbackURL: "/api/auth/github/callback",
+      scope: ["user:email"], // 🔑 Required to fetch emails
+    },
+    async (accessToken, refreshToken, profile, done) => {
+      try {
+        // GitHub may not return a public email
+        let email = profile.emails?.[0]?.value;
 
-          const existingUser = await User.findOne({ email });
-          if (existingUser) return done(null, existingUser);
-
-          const newUser = await User.create({
-            name: profile.username,
-            email,
-            isVerified: true,
-          });
-          done(null, newUser);
-        } catch (error) {
-          done(error, null);
+        // Fallback: generate a fake email if none exists
+        if (!email) {
+          email = `${profile.username}@users.noreply.github.com`;
+          console.warn("No public email for GitHub user, using fallback:", email);
         }
-      }
-    )
-  );
-}
 
-export default passport;
+        // Check if user already exists
+        const existingUser = await User.findOne({ email });
+        if (existingUser) return done(null, existingUser);
+
+        // Create new user
+        const newUser = await User.create({
+          name: profile.displayName || profile.username,
+          email,
+          isVerified: true, // OAuth trusted
+          password: crypto.randomBytes(20).toString("hex"), // random password
+        });
+
+        done(null, newUser);
+      } catch (error) {
+        done(error, null);
+      }
+    }
+  )
+);
+}

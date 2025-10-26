@@ -3,14 +3,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { BookOpen, Users, Star, DollarSign, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Progress } from '@/components/ui/progress';
 
 export default function InstructorDashboard() {
+  const colorClasses: Record<string, string> = {
+    primary: 'text-blue-500',
+    secondary: 'text-purple-500',
+    warning: 'text-yellow-400',
+    success: 'text-green-500',
+  };
+
   const stats = [
-    { label: 'Total Courses', value: '8', icon: BookOpen, color: 'text-primary', change: '+2 this month' },
-    { label: 'Total Students', value: '1,234', icon: Users, color: 'text-secondary', change: '+123 this month' },
-    { label: 'Average Rating', value: '4.8', icon: Star, color: 'text-warning', change: '+0.2 this month' },
-    { label: 'Revenue', value: '$12,450', icon: DollarSign, color: 'text-success', change: '+15% this month' },
+    { label: 'Total Courses', value: '8', icon: BookOpen, color: 'primary', change: '+2 this month' },
+    { label: 'Total Students', value: '1,234', icon: Users, color: 'secondary', change: '+123 this month' },
+    { label: 'Average Rating', value: '4.8', icon: Star, color: 'warning', change: '+0.2 this month' },
+    { label: 'Revenue', value: '$12,450', icon: DollarSign, color: 'success', change: '+15% this month' },
   ];
 
   const courses = [
@@ -43,9 +49,15 @@ export default function InstructorDashboard() {
     },
   ];
 
+  const statusClasses: Record<string, string> = {
+    published: 'bg-green-100 text-green-600',
+    draft: 'bg-yellow-100 text-yellow-600',
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold mb-2">Instructor Dashboard</h1>
@@ -69,11 +81,11 @@ export default function InstructorDashboard() {
                     <p className="text-sm text-muted-foreground">{stat.label}</p>
                     <p className="text-2xl font-bold mt-1">{stat.value}</p>
                   </div>
-                  <stat.icon className={`h-8 w-8 ${stat.color}`} />
+                  <stat.icon className={`h-8 w-8 ${colorClasses[stat.color]}`} />
                 </div>
                 <div className="flex items-center text-sm">
-                  <TrendingUp className="h-4 w-4 text-success mr-1" />
-                  <span className="text-success">{stat.change}</span>
+                  <TrendingUp className={`h-4 w-4 mr-1 ${colorClasses.success}`} />
+                  <span className={`text-sm ${colorClasses.success}`}>{stat.change}</span>
                 </div>
               </CardContent>
             </Card>
@@ -98,11 +110,7 @@ export default function InstructorDashboard() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="font-semibold truncate">{course.title}</h3>
-                      <span className={`text-xs px-2 py-1 rounded ${
-                        course.status === 'published' 
-                          ? 'bg-success/20 text-success' 
-                          : 'bg-warning/20 text-warning'
-                      }`}>
+                      <span className={`text-xs px-2 py-1 rounded ${statusClasses[course.status]}`}>
                         {course.status}
                       </span>
                     </div>
@@ -112,7 +120,7 @@ export default function InstructorDashboard() {
                         {course.students} students
                       </span>
                       <span className="flex items-center gap-1">
-                        <Star className="h-4 w-4 fill-warning text-warning" />
+                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                         {course.rating}
                       </span>
                       <span className="flex items-center gap-1">
@@ -141,8 +149,8 @@ export default function InstructorDashboard() {
                 {['John Doe', 'Jane Smith', 'Mike Johnson', 'Sarah Williams'].map((name, i) => (
                   <div key={i} className="flex items-center justify-between py-2 border-b last:border-0">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
-                        <Users className="h-4 w-4 text-primary" />
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <Users className="h-4 w-4 text-blue-500" />
                       </div>
                       <span className="font-medium">{name}</span>
                     </div>
@@ -169,7 +177,7 @@ export default function InstructorDashboard() {
                       <span className="font-medium">{review.name}</span>
                       <div className="flex">
                         {Array.from({ length: review.rating }).map((_, j) => (
-                          <Star key={j} className="h-4 w-4 fill-warning text-warning" />
+                          <Star key={j} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                         ))}
                       </div>
                     </div>

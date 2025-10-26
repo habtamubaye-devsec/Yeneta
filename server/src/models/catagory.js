@@ -1,14 +1,25 @@
 import mongoose from "mongoose";
 
-const CategorySchema = new mongoose.Schema(
+const categorySchema = new mongoose.Schema(
   {
-    name: { type: String, required: true, unique: true },
-    description: { type: String },
+    name: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+    },
+    description: {
+      type: String,
+      trim: true,
+    },
+    // 🆕 New field
+    subCategories: {
+      type: [String], // array of strings
+      required: true
+
+    },
   },
   { timestamps: true }
 );
 
-// Prevent OverwriteModelError
-const Category = mongoose.models.Category || mongoose.model("Category", CategorySchema);
-
-export default Category;
+export default mongoose.model("Category", categorySchema);

@@ -5,6 +5,7 @@ import {
   getAllCategories,
   updateCategory,
   deleteCategory,
+  getCategoryById,
 } from "../controllers/categoryControllers.js";
 
 const router = express.Router();
@@ -13,6 +14,7 @@ const router = express.Router();
 router.get("/", getAllCategories);
 
 // Admin-only routes
+router.get("/:id", protect,authorizeRoles("admin", "superAdmin"), getCategoryById);
 router.post("/", protect, authorizeRoles("admin", "superadmin"), createCategory);
 router.patch("/:id", protect, authorizeRoles("admin", "superadmin"), updateCategory);
 router.delete("/:id", protect, authorizeRoles("admin", "superadmin"), deleteCategory);

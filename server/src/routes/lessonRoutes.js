@@ -7,7 +7,9 @@ import {
   deleteLesson
 } from "../controllers/lessonControllers.js";
 import { protect, authorizeRoles } from "../middlewares/authMiddleware.js";
-import { parser } from "../utils/multer.js"; // Multer + Cloudinary
+import { parser } from "../utils/multer.js"; // Multer + Cloudimpo
+import { upload } from "../config/cloudinary-l.js"; // ✅ correct import
+
 
 const router = express.Router();
 
@@ -17,7 +19,7 @@ router.post(
   "/:courseId/lessons",
   protect,
   authorizeRoles("instructor", "admin"),
-  parser.array("resources", 10), // max 10 files per request
+  upload.array("files", 10), // "files" must match your form field name
   createLesson
 );
 
