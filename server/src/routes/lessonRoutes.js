@@ -4,41 +4,44 @@ import {
   getAllLessons,
   getLesson,
   updateLesson,
-  deleteLesson
+  deleteLesson,
 } from "../controllers/lessonControllers.js";
 import { protect, authorizeRoles } from "../middlewares/authMiddleware.js";
-import { parser } from "../utils/multer.js"; // Multer + Cloudimpo
-import { upload } from "../config/cloudinary-l.js"; // ✅ correct import
-
+import { parser } from "../utils/multer.js";
+import { upload } from "../config/cloudinary-l.js";
 
 const router = express.Router();
 
-// 🔹 Create a lesson (Instructor/Admin only)
-// Accepts multipart/form-data: "resources" files + textResources JSON string
+// ✅ Get all lessons for a course
+router.get("/:courseId/lessons", protect, getAllLessons);
+
+// ✅ Create a lesson
 router.post(
   "/:courseId/lessons",
   protect,
   authorizeRoles("instructor", "admin"),
-  upload.array("files", 10), // "files" must match your form field name
+  upload.array("resources", 10),
   createLesson
 );
 
-// 🔹 Get all lessons for a course
-router.get("/:courseId/lessons", protect, getAllLessons);
+// ✅ Get a single lesson
+router.get("/:courseId/lessons/:lessonId", protect, getLesson);
 
-// 🔹 Get a single lesson by ID
-router.get("/lesson/:id", protect, getLesson);
-
-// 🔹 Update a lesson (text + file resources)
+// ✅ Update a lesson
 router.put(
-  "/:id",
+  "/:courseId/lessons/:lessonId",
   protect,
   authorizeRoles("instructor", "admin"),
-  parser.array("resources", 10), // optional new files
+  parser.array("resources", 10),
   updateLesson
 );
 
-// 🔹 Delete a lesson by ID
-router.delete("/:id", protect, authorizeRoles("instructor", "admin"), deleteLesson);
+// ✅ Delete a lesson
+router.delete(
+  "/:courseId/lessons/:lessonId",
+  protect,
+  authorizeRoles("instructor", "admin"),
+  deleteLesson
+);
 
 export default router;

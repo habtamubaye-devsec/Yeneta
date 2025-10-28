@@ -1,13 +1,10 @@
 import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, UserCheck, UserX, Shield } from 'lucide-react';
-import { toast } from 'sonner';
+import { Card } from 'antd';
+import { Button, Input, Select, Table, Tag, Space, message } from 'antd';
+import { SearchOutlined, UserAddOutlined, StopOutlined, SafetyOutlined } from '@ant-design/icons';
+
+const { Option } = Select;
 
 export default function UserManagement() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -22,123 +19,126 @@ export default function UserManagement() {
   ];
 
   const handleApprove = (userId: number) => {
-    toast.success('User approved successfully');
+    message.success('User approved successfully');
   };
 
   const handleBan = (userId: number) => {
-    toast.success('User banned successfully');
+    message.success('User banned successfully');
   };
 
   const handleUnban = (userId: number) => {
-    toast.success('User unbanned successfully');
+    message.success('User unbanned successfully');
   };
+
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch =
+      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
+    return matchesSearch && matchesRole;
+  });
+
+  const columns = [
+    {
+      title: 'Name',
+      dataIndex: 'name',
+      key: 'name',
+      render: (text: string) => <b>{text}</b>,
+    },
+    {
+      title: 'Email',
+      dataIndex: 'email',
+      key: 'email',
+    },
+    {
+      title: 'Role',
+      dataIndex: 'role',
+      key: 'role',
+      render: (role: string) => <Tag color="blue">{role}</Tag>,
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status: string) => {
+        const color =
+          status === 'active' ? 'green' : status === 'pending' ? 'gold' : 'red';
+        return <Tag color={color}>{status.toUpperCase()}</Tag>;
+      },
+    },
+    {
+      title: 'Joined',
+      dataIndex: 'joinedDate',
+      key: 'joinedDate',
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (_: any, user: any) => (
+        <Space>
+          {user.status === 'pending' && (
+            <Button
+              type="primary"
+              icon={<UserAddOutlined />}
+              onClick={() => handleApprove(user.id)}
+            />
+          )}
+          {user.status === 'active' && (
+            <Button
+              danger
+              icon={<StopOutlined />}
+              onClick={() => handleBan(user.id)}
+            />
+          )}
+          {user.status === 'banned' && (
+            <Button
+              type="default"
+              icon={<SafetyOutlined />}
+              onClick={() => handleUnban(user.id)}
+            />
+          )}
+        </Space>
+      ),
+    },
+  ];
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold mb-2">User Management</h1>
-          <p className="text-muted-foreground">Manage users, approve instructors, and moderate accounts</p>
+          <p className="text-muted-foreground">
+            Manage users, approve instructors, and moderate accounts
+          </p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>All Users</CardTitle>
-            <CardDescription>View and manage all registered users</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-4 mb-6">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search users..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-              <Select value={roleFilter} onValueChange={setRoleFilter}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Filter by role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Roles</SelectItem>
-                  <SelectItem value="student">Student</SelectItem>
-                  <SelectItem value="instructor">Instructor</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+        <Card title="All Users" bordered={true}>
+          <div className="flex gap-4 mb-6">
+            <Input
+              prefix={<SearchOutlined />}
+              placeholder="Search users..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{ maxWidth: 300 }}
+            />
+            <Select
+              value={roleFilter}
+              onChange={setRoleFilter}
+              style={{ width: 200 }}
+            >
+              <Option value="all">All Roles</Option>
+              <Option value="student">Student</Option>
+              <Option value="instructor">Instructor</Option>
+              <Option value="admin">Admin</Option>
+            </Select>
+          </div>
 
-            <div className="border rounded-lg">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Joined</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.name}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="capitalize">{user.role}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={
-                            user.status === 'active' ? 'default' : 
-                            user.status === 'pending' ? 'secondary' : 
-                            'destructive'
-                          }
-                        >
-                          {user.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{user.joinedDate}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          {user.status === 'pending' && (
-                            <Button 
-                              size="sm" 
-                              variant="success"
-                              onClick={() => handleApprove(user.id)}
-                            >
-                              <UserCheck className="h-4 w-4" />
-                            </Button>
-                          )}
-                          {user.status === 'active' && (
-                            <Button 
-                              size="sm" 
-                              variant="destructive"
-                              onClick={() => handleBan(user.id)}
-                            >
-                              <UserX className="h-4 w-4" />
-                            </Button>
-                          )}
-                          {user.status === 'banned' && (
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => handleUnban(user.id)}
-                            >
-                              <Shield className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
+          <Table
+            rowKey="id"
+            columns={columns}
+            dataSource={filteredUsers}
+            pagination={{ pageSize: 5 }}
+          />
         </Card>
       </div>
     </DashboardLayout>

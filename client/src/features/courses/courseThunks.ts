@@ -86,19 +86,33 @@ export const updateCourse = createAsyncThunk(
   }
 );
 
-
-//Publish
+// 🔹 Toggle Publish Course
 export const togglePublishCourse = createAsyncThunk(
-  "courses/togglePublishCourse",
-  async (courseId: string, { rejectWithValue }) => {
+  "courses/togglePublish",
+  async (courseId: string, thunkAPI) => {
     try {
-      const { data } = await axios.patch(`${API_URL}/${courseId}/publish`);
-      return data.data;
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data || "Failed to update publish status");
+      const token = localStorage.getItem("token"); // or from Redux state if stored there
+
+      const res = await axios.patch(
+        `${API_URL}/${courseId}/publish`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          withCredentials: true,
+        }
+      );
+
+      return res.data.data;
+    } catch (err: any) {
+      return thunkAPI.rejectWithValue(
+        err.response?.data?.message || "Error toggling publish"
+      );
     }
   }
 );
+
 
 // ✅ Delete Course
 export const deleteCourse = createAsyncThunk(

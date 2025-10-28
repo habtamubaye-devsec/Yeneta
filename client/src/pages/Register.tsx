@@ -6,6 +6,7 @@ import { GraduationCap } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/hooks/reduxHooks";
 import { registerUser, verifyOtp } from "@/features/auth/authThunks";
 import { useAuthCheck } from "@/hooks/useAuthCheck";
+import { resendOtp } from "../features/auth/authThunks";
 
 export default function Register() {
   const [form] = Form.useForm();
@@ -13,9 +14,12 @@ export default function Register() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
-  const { userId, loading, message: successMessage, error } = useAppSelector(
-    (state) => state.auth
-  );
+  const {
+    userId,
+    loading,
+    message: successMessage,
+    error,
+  } = useAppSelector((state) => state.auth);
 
   // // 🔔 Redirect if already authenticated
   // useAuthCheck();
@@ -27,7 +31,11 @@ export default function Register() {
   }, [successMessage, error]);
 
   // 🟢 Register
-  const handleRegister = async (values: { name: string; email: string; password: string }) => {
+  const handleRegister = async (values: {
+    name: string;
+    email: string;
+    password: string;
+  }) => {
     if (values.password.length < 6) {
       message.error("Password must be at least 6 characters");
       return;
@@ -46,6 +54,19 @@ export default function Register() {
       navigate("/login");
     } catch {}
   };
+
+  // 🟡 Resend OTP
+const handleResendOtp = async () => {
+  const email = form.getFieldValue("email"); // ✅ get email from form data
+  if (!email) return message.error("Please enter your email first.");
+
+  try {
+    await dispatch(resendOtp({ email })).unwrap();
+    message.success("OTP has been resent to your email!");
+  } catch (err) {
+    message.error("Failed to resend OTP. Please try again.");
+  }
+};
 
   // OAuth login
   const handleOAuthLogin = (provider: "google" | "github") => {
@@ -92,12 +113,20 @@ export default function Register() {
             <Form.Item
               label="Password"
               name="password"
-              rules={[{ required: true, message: "Please enter your password" }]}
+              rules={[
+                { required: true, message: "Please enter your password" },
+              ]}
             >
               <Input.Password placeholder="••••••••" size="large" />
             </Form.Item>
 
-            <Button type="primary" htmlType="submit" block size="large" loading={loading}>
+            <Button
+              type="primary"
+              htmlType="submit"
+              block
+              size="large"
+              loading={loading}
+            >
               Create Account
             </Button>
 
@@ -124,7 +153,10 @@ export default function Register() {
 
             <p className="text-sm text-center mt-4 text-gray-500">
               Already have an account?{" "}
-              <Link to="/login" className="hover:underline font-medium text-blue-600">
+              <Link
+                to="/login"
+                className="hover:underline font-medium text-blue-600"
+              >
                 Sign in
               </Link>
             </p>
@@ -140,8 +172,23 @@ export default function Register() {
               />
             </Form.Item>
 
-            <Button type="primary" htmlType="submit" block size="large" loading={loading}>
+            <Button
+              type="primary"
+              htmlType="submit"
+              block
+              size="large"
+              loading={loading}
+            >
               Verify OTP
+            </Button>
+            <Button
+              type="link"
+              block
+              onClick={handleResendOtp}
+              disabled={loading}
+              className="mt-2"
+            >
+              Resend OTP
             </Button>
           </Form>
         )}

@@ -110,11 +110,18 @@ const authSlice = createSlice({
       });
 
     builder
+      .addCase(fetchCurrentUser.pending, (state) => {
+        state.loading = true; // ✅ Wait before redirect
+      })
       .addCase(fetchCurrentUser.fulfilled, (state, action) => {
+        state.loading = false;
         state.user = action.payload;
+        state.isAuthenticated = true;
       })
       .addCase(fetchCurrentUser.rejected, (state) => {
+        state.loading = false;
         state.user = null;
+        state.isAuthenticated = false;
       });
   },
 });

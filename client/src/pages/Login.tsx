@@ -32,6 +32,7 @@ export default function Login() {
       // Redirect based on role
       if (res.user.role === "student") navigate("/student");
       else if (res.user.role === "instructor") navigate("/instructor");
+      else if (res.user.role === "admin") navigate("/admin");
     } catch (err: any) {
       message.error(err || "Invalid credentials");
     }

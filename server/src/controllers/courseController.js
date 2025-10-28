@@ -1,4 +1,5 @@
 import Course from "../models/Course.js";
+import Lesson from "../models/lesson.js"
 import Enrollment from "../models/Enrollment.js";
 import Earning from "../models/Earning.js";
 import cloudinary from "../utils/cloudinary.js";
@@ -118,31 +119,51 @@ const updateCourse = async (req, res) => {
 };
 
 // PATCH /api/courses/:id/publish
-export const togglePublishStatus = async (req, res) => {
+const togglePublishCourse = async (req, res) => {
   try {
-    const course = await Course.findById(req.params.id);
+    const { id } = req.params;
 
+    const course = await Course.findOne({ _id: id, instructor: req.user._id });
     if (!course) {
-      return res.status(404).json({ success: false, message: "Course not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Course not found or not owned by you" });
     }
 
-    // Ensure there are at least 2 lessons before publishing
-    if (course.lessons.length < 2 && course.status !== "draft") {
-      return res.status(400).json({
-        success: false,
-        message: "You must have at least 2 lessons to publish this course.",
-      });
+    // 🔍 Count lessons for this course (accurate even if not populated)
+    const lessonCount = await Lesson.countDocuments({ course: course._id });
+
+    // 🟢 Publish if >= 2 lessons, otherwise prevent
+    if (!course.published) {
+      if (lessonCount < 2) {
+        return res.status(400).json({
+          success: false,
+          message: "You must have at least 2 lessons to publish this course",
+        });
+      }
+      course.published = true;
+      course.publishedAt = new Date();
+    } else {
+      // 🔴 Unpublish
+      course.published = false;
+      course.publishedAt = null;
     }
 
-    // Toggle status
-    course.status = course.status === "published" ? "draft" : "published";
     await course.save();
 
-    res.json({ success: true, data: course });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.json({
+      success: true,
+      message: course.published
+        ? "Course published successfully"
+        : "Course unpublished successfully",
+      data: course,
+    });
+  } catch (err) {
+    console.error("Toggle publish error:", err);
+    res.status(500).json({ success: false, message: err.message });
   }
 };
+
 
 // Delete course
 const deleteCourse = async (req, res) => {
@@ -223,6 +244,7 @@ const getStats = async (req, res) => {
 export {
   createCourse,
   updateCourse,
+  togglePublishCourse,
   deleteCourse,
   getAllCourses,
   getCourseById,

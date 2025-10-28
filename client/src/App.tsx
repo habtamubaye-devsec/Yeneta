@@ -24,13 +24,14 @@ import Register from "./pages/Register";
 import InstructorDashboard from "./pages/instructor/InstructorDashboard";
 import InstructorCourses from "./pages/instructor/MyCourses";
 import CreateCourse from "./pages/instructor/CreateCourse";
-import ManageCourse from "./pages/instructor/ManageCourse";
+import ManageCourse from "./pages/instructor/ManageLesson";
+import ManageLessons from "./pages/instructor/ManageLesson";
 // import Feedback from "./pages/instructor/Feedback";
 // import Analytics from "./pages/instructor/Analytics";
 
 // // ✅ Admin Pages
-// import AdminDashboard from "./pages/admin/AdminDashboard";
-// import UserManagement from "./pages/admin/UserManagement";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import UserManagement from "./pages/admin/UserManagement";
 // import CourseManagement from "./pages/admin/CourseManagement";
 // import ReviewModeration from "./pages/admin/ReviewModeration";
 // import CategoryManagement from "./pages/admin/CategoryManagement";
@@ -158,7 +159,7 @@ const App = () => (
                 path="/instructor/courses/:courseId"
                 element={
                   <ProtectedRoute allowedRoles={["instructor"]}>
-                    <ManageCourse />
+                    <ManageLessons />
                   </ProtectedRoute>
                 }
               />
@@ -180,7 +181,7 @@ const App = () => (
               /> */}
 
               {/* Admin */}
-              {/* <Route
+              <Route
                 path="/admin"
                 element={
                   <ProtectedRoute allowedRoles={["admin", "superadmin"]}>
@@ -196,7 +197,7 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
-              <Route
+              {/* <Route
                 path="/admin/courses"
                 element={
                   <ProtectedRoute allowedRoles={["admin", "superadmin"]}>
@@ -211,16 +212,16 @@ const App = () => (
                     <ReviewModeration />
                   </ProtectedRoute>
                 }
-              />
-              <Route
+              /> */}
+              {/* <Route
                 path="/admin/categories"
                 element={
                   <ProtectedRoute allowedRoles={["admin", "superadmin"]}>
                     <CategoryManagement />
                   </ProtectedRoute>
                 }
-              />
-              <Route
+              /> */}
+              {/* <Route
                 path="/admin/notifications"
                 element={
                   <ProtectedRoute allowedRoles={["admin", "superadmin"]}>

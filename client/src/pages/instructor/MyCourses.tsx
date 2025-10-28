@@ -112,17 +112,15 @@ export default function MyCourses() {
   // Publish / Unpublish
   const handleTogglePublish = async (course: any) => {
     try {
-      if (course.lessons.length < 2 && course.status !== "published") {
-        return message.warning(
-          "You must have at least 2 lessons to publish this course"
-        );
-      }
       await dispatch(togglePublishCourse(course._id)).unwrap();
+      console.log(course.published);
+
       message.success(
-        course.status === "published"
+        course.published
           ? "Course unpublished successfully"
           : "Course published successfully"
       );
+
       dispatch(fetchCourses());
     } catch (error: any) {
       message.error(error?.message || "Failed to change publish status");
@@ -180,17 +178,23 @@ export default function MyCourses() {
                     <h3 className="font-bold text-lg line-clamp-2">
                       {course.title}
                     </h3>
-                    <Badge
-                      variant={
-                        course.status === "published" ? "default" : "secondary"
-                      }
-                      className="w-fit"
-                    >
-                      {course.status}
-                    </Badge>
                   </div>
 
                   <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+                    <Badge
+                      variant={course.published ? "default" : "secondary"}
+                      className="w-fit"
+                    >
+                      {course.published ? (
+                        <p className=" text-green-400 text-sm">
+                          Published
+                        </p>
+                      ) : (
+                        <p className=" text-red-400">
+                          Unpublished
+                        </p>
+                      )}
+                    </Badge>
                     <span className="flex items-center gap-1">
                       <BookOpen className="h-4 w-4" />{" "}
                       {course.lessons?.length || 0} lessons
@@ -230,7 +234,9 @@ export default function MyCourses() {
                       onClick={() => handleTogglePublish(course)}
                     >
                       <UploadCloud className="h-4 w-4 mr-1" />
-                      {course.status === "published" ? "Unpublish" : "Publish"}
+                      {course.published
+                        ? "Unpublish"
+                        : "Publish"}
                     </Button>
                     <Button
                       variant="ghost"
@@ -299,18 +305,30 @@ export default function MyCourses() {
               </Select>
             </Form.Item>
 
-<Form.Item name="subCategory" label="Subcategory" rules={[{ required: true, message: "Please select a subcategory" }]}>
-  <Select placeholder="Select subcategory" disabled={!selectedCategory}>
-    {selectedCategoryObj?.subCategories?.length ? (
-      selectedCategoryObj.subCategories.map((sub) => (
-        <Option key={sub} value={sub}>{sub}</Option>
-      ))
-    ) : (
-      <Option value="" disabled>No subcategories available</Option>
-    )}
-  </Select>
-</Form.Item>
-
+            <Form.Item
+              name="subCategory"
+              label="Subcategory"
+              rules={[
+                { required: true, message: "Please select a subcategory" },
+              ]}
+            >
+              <Select
+                placeholder="Select subcategory"
+                disabled={!selectedCategory}
+              >
+                {selectedCategoryObj?.subCategories?.length ? (
+                  selectedCategoryObj.subCategories.map((sub) => (
+                    <Option key={sub} value={sub}>
+                      {sub}
+                    </Option>
+                  ))
+                ) : (
+                  <Option value="" disabled>
+                    No subcategories available
+                  </Option>
+                )}
+              </Select>
+            </Form.Item>
 
             <Form.Item name="thumbnail" label="Thumbnail">
               {preview && (

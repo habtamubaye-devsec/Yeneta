@@ -17,7 +17,7 @@ const Index = () => {
   // 🧠 On mount, check if token exists and fetch current user
   useEffect(() => {
     dispatch(fetchCurrentUser());
-  }, [dispatch]);
+  }, [dispatch, isAuthenticated]);
 
   console.log("🔥 Auth state in Index:", { user, isAuthenticated, loading });
 
@@ -45,7 +45,7 @@ const Index = () => {
             </Link>
 
             <div className="flex items-center gap-4">
-              {user ? (
+              {user && isAuthenticated ? (
                 <>
                   <Link to="/courses">
                     <Button type="text">Browse Courses</Button>

@@ -40,12 +40,14 @@ export const verifyOtp = createAsyncThunk(
 // RESEND OTP
 export const resendOtp = createAsyncThunk(
   "auth/resendOtp",
-  async ({ userId }: { userId: string }, thunkAPI) => {
+  async ({ email }: { email: string }, thunkAPI) => {
     try {
-      const res = await axios.post("http://localhost:8000/api/auth/resend-otp", { userId });
+      const res = await axios.post("http://localhost:8000/api/auth/resend-otp", { email });
       return res.data; // expects { message }
     } catch (error: any) {
-      return thunkAPI.rejectWithValue(error.response?.data?.message || "Failed to resend OTP");
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || "Failed to resend OTP"
+      );
     }
   }
 );

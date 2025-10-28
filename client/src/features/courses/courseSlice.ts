@@ -5,6 +5,7 @@ import {
   fetchCourses,
   getCourseById,
   updateCourse,
+  togglePublishCourse,
   deleteCourse,
 } from "./courseThunks";
 
@@ -85,6 +86,24 @@ const courseSlice = createSlice({
         if (index !== -1) state.courses[index] = action.payload;
       })
       .addCase(updateCourse.rejected, (state, action) => {
+        state.error = action.payload as string;
+      });
+    
+     // Toggle publish
+    builder
+      .addCase(togglePublishCourse.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(togglePublishCourse.fulfilled, (state, action) => {
+        state.loading = false;
+        const updated = action.payload;
+        const index = state.courses.findIndex((c) => c._id === updated._id);
+        if (index !== -1) {
+          state.courses[index] = updated;
+        }
+      })
+      .addCase(togglePublishCourse.rejected, (state, action) => {
+        state.loading = false;
         state.error = action.payload as string;
       });
 
