@@ -4,95 +4,67 @@ import cloudinary from "../utils/cloudinary.js";
 import fs from "fs";
 
 // Create Lesson (text + file resources)
+/**
+ * @desc Create a new lesson under a specific course
+ * @route POST /api/courses/:courseId/lessons
+ * @access Private (Instructor, Admin)
+ */
 export const createLesson = async (req, res) => {
   try {
-    console.log("📩 Incoming createLesson request:", req.body);
+    const { courseId } = req.params;
+    const { title, description, position } = req.body;
+    const file = req.file; // "resources" file from upload.single("resources")
 
-    const course = req.params.courseId;
-    const { title, position, textResources } = req.body;
+    console.log("🎬 Incoming createLesson:", { courseId, title, description, position });
+    console.log("📁 Uploaded file:", file?.originalname);
 
-    if (!title) {
+    // ✅ Validate
+    if (!title || !description || !position || !file) {
       return res.status(400).json({
         success: false,
-        message: "Lesson title is required",
+        message: "All fields (title, description, position, video) are required.",
       });
     }
 
-    // Parse text resources if sent as JSON string
-    let parsedTextResources = [];
-    if (textResources) {
-      parsedTextResources = Array.isArray(textResources)
-        ? textResources
-        : JSON.parse(textResources);
-    }
-
-    let fileResources = [];
-
-    if (req.files && req.files.length > 0) {
-      console.log(`📂 Uploading ${req.files.length} files to Cloudinary...`);
-
-      for (const file of req.files) {
-        try {
-          // auto handles image/video/pdf
-          const uploadResult = await cloudinary.uploader.upload(file.path, {
-            resource_type: "auto",
-            folder: "lessons",
-          });
-
-          // Safely delete temporary file
-          if (file.path && fs.existsSync(file.path)) {
-            fs.unlinkSync(file.path);
-          }
-
-          fileResources.push({
-            title: file.originalname,
-            subtitle: "",
-            content: uploadResult.secure_url,
-            type: file.mimetype.startsWith("video/")
-              ? "video"
-              : file.mimetype.startsWith("image/")
-              ? "image"
-              : "pdf",
-            position: fileResources.length + 1,
-          });
-        } catch (uploadErr) {
-          console.error("⚠️ Cloudinary upload failed:", uploadErr.message);
-          throw uploadErr;
+    // ✅ Upload to Cloudinary
+    const uploadPromise = new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        { resource_type: "video", folder: "lessons_videos" },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
         }
-      }
-    }
-
-    // Combine text and file resources
-    const allResources = [...fileResources];
-    parsedTextResources.forEach((tr, index) => {
-      allResources.push({
-        content: tr.content,
-        type: "text",
-        position: allResources.length + 1,
-      });
+      );
+      uploadStream.end(file.buffer);
     });
 
-    const lesson = new Lesson({
-      course,
+    const result = await uploadPromise;
+    console.log("✅ Cloudinary upload success:", result.secure_url);
+
+    // ✅ Save lesson to DB
+    const lesson = await Lesson.create({
+      course: courseId,
       title,
-      position: position || 0,
-      resources: allResources,
+      description,
+      position,
+      videoUrl: result.secure_url,
+      videoPublicId: result.public_id,
     });
 
-    await lesson.save();
-
-    await Course.findByIdAndUpdate(course, { $push: { lessons: lesson._id } });
-
-    res.status(201).json({ success: true, lesson });
+    res.status(201).json({
+      success: true,
+      message: "Lesson created successfully.",
+      data: lesson,
+    });
   } catch (error) {
-    console.error("💥 Error in createLesson:", error.stack || error.message || error);
+    console.error("❌ createLesson error:", error);
     res.status(500).json({
       success: false,
-      message: error.message || "Internal Server Error",
+      message: "Server error while creating lesson.",
+      error: error.message,
     });
   }
 };
-
 
 // Get all lessons by course
 export const getAllLessons = async (req, res) => {

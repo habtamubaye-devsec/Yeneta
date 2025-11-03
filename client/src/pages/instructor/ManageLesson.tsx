@@ -1,278 +1,102 @@
 import React, { useEffect, useState } from "react";
-import {
-  Table,
-  Button,
-  Space,
-  Modal,
-  message,
-  Typography,
-  Spin,
-} from "antd";
-import {
-  PlusOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  DragOutlined,
-} from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
-import type { RootState, AppDispatch } from "@/app/store";
-import AddLessonModal from "@/components/lesson/AddLessonModal";
-import {
-  fetchLessons,
-  createLesson,
-  updateLesson,
-  deleteLesson,
-} from "@/features/lesson/lessonThunks";
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-  useSortable,
-  arrayMove,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import { useParams } from "react-router-dom";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { Button, List, Card, Modal, Typography, message, Spin } from "antd";
+import { Trash2, Plus } from "lucide-react";
+import AddLessonModal from "@/components/lesson/AddLessonModal";
+import { AppDispatch, RootState } from "@/app/store";
+import { fetchLessons, createLesson, deleteLesson } from "@/features/lesson/lessonThunks";
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
-interface Lesson {
-  _id: string;
-  title: string;
-  resources?: { type: string; content: string }[];
-  position?: number;
-}
-
-/** 🧩 Sortable row wrapper */
-function SortableRow(props: any) {
-  const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id: props["data-row-key"] });
-
-  const style: React.CSSProperties = {
-    ...props.style,
-    transform: CSS.Transform.toString(transform),
-    transition,
-    cursor: "grab",
-  };
-
-  return (
-    <tr ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      {props.children}
-    </tr>
-  );
-}
-
-export default function ManageLessons() {
+export default function ManageLessonsPage() {
   const dispatch = useDispatch<AppDispatch>();
+  const { courseId } = useParams<{ courseId: string }>();
   const { lessons, loading } = useSelector((state: RootState) => state.lessons);
+  const { courses } = useSelector((state: RootState) => state.courses);
 
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
 
-  // ⏳ Load all lessons from backend
-const { courseId } = useParams();
-useEffect(() => {
-  if (courseId) dispatch(fetchLessons(courseId));
-}, [dispatch, courseId]);
+  useEffect(() => {
+    if (courseId) dispatch(fetchLessons(courseId));
+  }, [dispatch, courseId]);
 
-  /** 🟢 Add new lesson */
-  const handleAddLesson = async (formData: FormData) => {
-    if (courseId) {
-    formData.append("courseId", courseId);
-  }
-    const res = await dispatch(createLesson(formData));
-    if (createLesson.fulfilled.match(res)) {
-      message.success("✅ Lesson added successfully");
-      setIsModalVisible(false);
-    } else {
-      message.error(res.payload as string);
+  const course = courses.find((c: any) => c._id === courseId);
+
+  const handleAddLesson = async (courseIdParam: string, formData: FormData) => {
+    try {
+      const res = await dispatch(createLesson({ courseId: courseIdParam, formData }));
+      if (createLesson.fulfilled.match(res)) {
+        message.success("Lesson added");
+        setIsModalVisible(false);
+      } else {
+        message.error(res.payload as string);
+      }
+    } catch (err) {
+      message.error("Failed to add lesson");
     }
   };
 
-  /** ✏️ Edit lesson */
-  const handleEditLesson = async (formData: FormData) => {
-    if (!editingLesson) return;
-    const res = await dispatch(
-      updateLesson({ id: editingLesson._id, lessonData: formData })
-    );
-    if (updateLesson.fulfilled.match(res)) {
-      message.success("✏️ Lesson updated successfully");
-      setIsModalVisible(false);
-    } else {
-      message.error(res.payload as string);
-    }
-  };
-
-  /** 🗑️ Delete lesson */
-  const handleDeleteLesson = (id: string) => {
+  const handleDelete = async (id: string) => {
+    if (!courseId) return;
     Modal.confirm({
-      title: "Are you sure you want to delete this lesson?",
-      okText: "Yes, delete",
-      okType: "danger",
-      cancelText: "Cancel",
+      title: "Delete lesson?",
       onOk: async () => {
-        const res = await dispatch(deleteLesson(id));
-        if (deleteLesson.fulfilled.match(res)) {
-          message.success("🗑️ Lesson deleted");
-        } else {
-          message.error(res.payload as string);
-        }
+        const res = await dispatch(deleteLesson({ courseId, id }));
+        if (deleteLesson.fulfilled.match(res)) message.success("Lesson deleted");
+        else message.error(res.payload as string);
       },
     });
   };
 
-  /** ✨ DnD setup */
-  const sensors = useSensors(useSensor(PointerSensor));
-
-  const handleDragEnd = async (event: any) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-
-    const oldIndex = lessons.findIndex((l) => l._id === active.id);
-    const newIndex = lessons.findIndex((l) => l._id === over.id);
-    const reordered = arrayMove(lessons, oldIndex, newIndex);
-
-    // optimistic update
-    const updatedOrder = reordered.map((l, i) => ({
-      ...l,
-      position: i + 1,
-    }));
-
-    message.info("⏳ Updating lesson order...");
-    for (const lesson of updatedOrder) {
-      await dispatch(
-        updateLesson({
-          id: lesson._id,
-          lessonData: Object.assign(new FormData(), {
-            position: String(lesson.position),
-          }) as any,
-        })
-      );
-    }
-
-    message.success("✅ Lessons reordered!");
-  };
-
-  const columns = [
-    {
-      title: "Drag",
-      dataIndex: "drag",
-      width: 60,
-      render: () => <DragOutlined style={{ cursor: "grab" }} />,
-    },
-    { title: "Title", dataIndex: "title", key: "title" },
-    
-    {
-      title: "Resources",
-      key: "resources",
-      render: (lesson: Lesson) => (
-        <div>
-          {lesson.resources && lesson.resources.length > 0 ? (
-            lesson.resources.map((r, idx) => (
-              <div key={idx}>
-                {r.type === "image" && (
-                  <img
-                    src={r.content}
-                    alt=""
-                    style={{ width: 60, height: 60, objectFit: "cover" }}
-                  />
-                )}
-                {r.type === "video" && (
-                  <video src={r.content} controls width={100} height={60} />
-                )}
-                {r.type === "text" && <span>{r.content}</span>}
-              </div>
-            ))
-          ) : (
-            <span>-</span>
-          )}
-        </div>
-      ),
-    },
-    {
-      title: "Actions",
-      key: "actions",
-      render: (_: any, record: Lesson) => (
-        <Space>
-          <Button icon={<EditOutlined />} onClick={() => openModal(record)}>
-            Edit
-          </Button>
-          <Button
-            icon={<DeleteOutlined />}
-            danger
-            onClick={() => handleDeleteLesson(record._id)}
-          >
-            Delete
-          </Button>
-        </Space>
-      ),
-    },
-  ];
-
-  const openModal = (lesson?: Lesson) => {
-    setEditingLesson(lesson || null);
-    setIsModalVisible(true);
-  };
-
-  const handleSave = (formData: FormData) => {
-    if (editingLesson) handleEditLesson(formData);
-    else handleAddLesson(formData);
-  };
-
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="flex justify-between items-center mb-4">
-        <Title level={3}>📚 Manage Lessons</Title>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => openModal()}
-        >
-          Add Lesson
-        </Button>
+    <DashboardLayout>
+      <div className="p-6 bg-white min-h-screen">
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <Title level={3}>{course ? course.title : `Course ${courseId}`}</Title>
+            <Text type="secondary">Manage lessons for this course</Text>
+          </div>
+          <Button type="primary" icon={<Plus />} onClick={() => setIsModalVisible(true)}>
+            Add Lesson
+          </Button>
+        </div>
+
+        {loading ? (
+          <Spin />
+        ) : (
+          <List
+            grid={{ gutter: 16, column: 3 }}
+            dataSource={lessons}
+            renderItem={(lesson: any) => {
+              const resource = lesson.resources && lesson.resources[0];
+              const videoUrl = resource?.url || resource?.content || resource?.path || (resource && typeof resource === 'string' ? resource : null);
+              return (
+                <List.Item>
+                  <Card title={lesson.title} extra={<Button danger onClick={() => handleDelete(lesson._id)}><Trash2 /></Button>}>
+                    <Text>{lesson.description}</Text>
+                    {videoUrl ? (
+                      <video src={videoUrl} controls style={{ width: '100%', marginTop: 8 }} />
+                    ) : (
+                      <Text type="secondary">No video</Text>
+                    )}
+                  </Card>
+                </List.Item>
+              );
+            }}
+          />
+        )}
+
+        {isModalVisible && (
+          <AddLessonModal
+            visible={isModalVisible}
+            onClose={() => setIsModalVisible(false)}
+            onSubmit={handleAddLesson}
+            courseId={courseId || course?._id}
+          />
+        )}
       </div>
-
-      {loading ? (
-        <Spin />
-      ) : (
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext
-            items={lessons.map((l) => l._id)}
-            strategy={verticalListSortingStrategy}
-          >
-            <Table
-              dataSource={lessons}
-              columns={columns}
-              rowKey="_id"
-              pagination={false}
-              components={{
-                body: {
-                  row: SortableRow,
-                },
-              }}
-              bordered
-            />
-          </SortableContext>
-        </DndContext>
-      )}
-
-      {isModalVisible && (
-        <AddLessonModal
-          visible={isModalVisible}
-          onClose={() => setIsModalVisible(false)}
-          onSubmit={handleSave}
-          editingLesson={editingLesson}
-        />
-      )}
-    </div>
+    </DashboardLayout>
   );
 }

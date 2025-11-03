@@ -8,7 +8,7 @@ import {
 } from "../controllers/lessonControllers.js";
 import { protect, authorizeRoles } from "../middlewares/authMiddleware.js";
 import { parser } from "../utils/multer.js";
-import { upload } from "../config/cloudinary-l.js";
+import upload from "../middlewares/upload-video.js";
 
 const router = express.Router();
 
@@ -20,7 +20,7 @@ router.post(
   "/:courseId/lessons",
   protect,
   authorizeRoles("instructor", "admin"),
-  upload.array("resources", 10),
+  upload.single("resources"),
   createLesson
 );
 

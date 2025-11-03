@@ -7,6 +7,7 @@ import {
   updateCourse,
   togglePublishCourse,
   deleteCourse,
+  fetchCoursesByInstructor,
 } from "./courseThunks";
 
 interface Course {
@@ -21,6 +22,7 @@ interface Course {
 
 interface CourseState {
   courses: Course[];
+  instructorCourses: Course[]; // ✅ added
   selectedCourse?: Course | null;
   loading: boolean;
   error?: string | null;
@@ -28,6 +30,7 @@ interface CourseState {
 
 const initialState: CourseState = {
   courses: [],
+  instructorCourses: [],
   selectedCourse: null,
   loading: false,
   error: null,
@@ -76,6 +79,20 @@ const courseSlice = createSlice({
         state.selectedCourse = action.payload;
       })
       .addCase(getCourseById.rejected, (state, action) => {
+        state.error = action.payload as string;
+      });
+
+    builder
+      .addCase(fetchCoursesByInstructor.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchCoursesByInstructor.fulfilled, (state, action) => {
+        state.loading = false;
+        state.courses = action.payload;
+      })
+      .addCase(fetchCoursesByInstructor.rejected, (state, action) => {
+        state.loading = false;
         state.error = action.payload as string;
       });
 

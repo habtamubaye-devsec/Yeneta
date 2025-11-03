@@ -1,305 +1,163 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Modal,
   Form,
   Input,
   Button,
-  Space,
+  Upload,
   Typography,
   message,
-  Upload,
 } from "antd";
 import {
-  DeleteOutlined,
-  PlusOutlined,
-  MenuOutlined,
-  FileTextOutlined,
-  PlayCircleOutlined,
-  FileOutlined,
-  LinkOutlined,
-  FilePdfOutlined,
   UploadOutlined,
+  PlayCircleOutlined,
+  DeleteOutlined,
 } from "@ant-design/icons";
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-  useSortable,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+import { useParams } from "react-router-dom";
 
 const { Text } = Typography;
-const { TextArea } = Input;
 
-interface Resource {
-  id: number;
-  name: string;
-  type: "text" | "image" | "video" | "link" | "pdf";
-  file?: File; // actual file for backend
-  url?: string; // preview URL (object URL or external link)
+type VideoItem = {
+  id: string;
+  file: File;
+  preview: string;
+};
+
+interface AddLessonModalProps {
+  visible: boolean;
+  onClose: () => void;
+  onSubmit: (courseId: string, formData: FormData) => void;
 }
 
-function SortableResourceItem({
-  resource,
-  onDelete,
-}: {
-  resource: Resource;
-  onDelete: () => void;
-}) {
-  // keep setNodeRef on container, attach attributes/listeners to drag handle only
-  const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id: resource.id.toString() });
-
-  const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition: transition ?? undefined,
-    background: "#f5f5f5",
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 8,
-    display: "flex",
-    flexDirection: "column",
-    gap: 8,
-  };
-
-  const getIcon = () => {
-    switch (resource.type) {
-      case "text":
-        return <FileTextOutlined />;
-      case "image":
-        return <FileOutlined />;
-      case "video":
-        return <PlayCircleOutlined />;
-      case "link":
-        return <LinkOutlined />;
-      case "pdf":
-        return <FilePdfOutlined />;
-      default:
-        return <FileTextOutlined />;
-    }
-  };
-
-  return (
-    <div ref={setNodeRef} style={style}>
-      <div style={{ display: "flex", alignItems: "center", width: "100%" }}>
-        {/* Drag handle ONLY */}
-        <div
-          {...attributes}
-          {...listeners}
-          style={{ display: "flex", alignItems: "center", gap: 8, cursor: "grab" }}
-          aria-label="drag-handle"
-        >
-          <MenuOutlined style={{ color: "#999" }} />
-          {getIcon()}
-          <Text style={{ marginLeft: 6 }}>{`${resource.id}. ${resource.name}`}</Text>
-        </div>
-
-        {/* Delete button separated and stops propagation */}
-        <div style={{ marginLeft: "auto" }}>
-          <Button
-            type="text"
-            danger
-            icon={<DeleteOutlined />}
-            onClick={(e) => {
-              e.stopPropagation(); // prevent DnD from swallowing the click
-              onDelete();
-            }}
-          />
-        </div>
-      </div>
-
-      {/* Previews (images, video, pdf, link) */}
-      {resource.type === "image" && resource.url && (
-        <img
-          src={resource.url}
-          alt={resource.name}
-          style={{ width: "100%", maxHeight: 220, objectFit: "cover", borderRadius: 6 }}
-        />
-      )}
-
-      {resource.type === "video" && resource.url && (
-        <video
-          src={resource.url}
-          controls
-          style={{ width: "100%", maxHeight: 300, borderRadius: 6 }}
-        />
-      )}
-
-      {resource.type === "pdf" && resource.url && (
-        <iframe
-          src={resource.url}
-          title={resource.name}
-          style={{ width: "100%", height: 220, borderRadius: 6 }}
-        />
-      )}
-
-      {resource.type === "link" && resource.url && (
-        <a href={resource.url} target="_blank" rel="noopener noreferrer">
-          {resource.url}
-        </a>
-      )}
-    </div>
-  );
+interface AddLessonModalProps {
+  visible: boolean;
+  onClose: () => void;
+  onSubmit: (courseId: string, formData: FormData) => void;
+  // optional override: parent can pass courseId instead of relying on URL params
+  courseId?: string;
 }
 
-export default function AddLessonModal({
+const AddLessonModal: React.FC<AddLessonModalProps> = ({
   visible,
   onClose,
   onSubmit,
-}: {
-  visible: boolean;
-  onClose: () => void;
-  onSubmit: (formData: FormData) => void; // backend expects FormData with files
-}) {
+  courseId: propCourseId,
+}) => {
   const [form] = Form.useForm();
-  const [resources, setResources] = useState<Resource[]>([]);
-  const [newResource, setNewResource] = useState("");
-  const [resourceType, setResourceType] = useState<
-    "text" | "image" | "video" | "link" | "pdf" | null
-  >(null);
+  const [video, setVideo] = useState<VideoItem | null>(null);
+  const params = useParams<{ courseId: string }>();
+  const runtimeCourseId = propCourseId ?? params.courseId;
 
-  const sensors = useSensors(useSensor(PointerSensor));
-
-  const getAccept = () => {
-    if (resourceType === "image") return "image/*";
-    if (resourceType === "video") return "video/*";
-    if (resourceType === "pdf") return ".pdf";
-    return undefined;
-  };
-
-  const handleAddResource = (file?: File) => {
-    if ((resourceType === "text" || resourceType === "link") && !newResource.trim()) {
-      message.warning("Please enter resource content");
-      return;
-    }
-    if (!resourceType) {
-      message.warning("Select a resource type first");
-      return;
-    }
-
-    const newId = resources.length > 0 ? resources[resources.length - 1].id + 1 : 1;
-
-    const item: Resource = {
-      id: newId,
-      name:
-        resourceType === "text" || resourceType === "link"
-          ? newResource.trim()
-          : file?.name ?? "Unnamed",
-      type: resourceType,
-      file: file,
-      url:
-        resourceType === "image" || resourceType === "video" || resourceType === "pdf"
-          ? file
-            ? URL.createObjectURL(file)
-            : undefined
-          : resourceType === "link"
-          ? newResource.trim()
-          : undefined,
+  // Clean up video preview on unmount or close
+  useEffect(() => {
+    return () => {
+      if (video) URL.revokeObjectURL(video.preview);
     };
+  }, [video]);
 
-    setResources((prev) => [...prev, item]);
-    setNewResource("");
-    setResourceType(null);
-    message.success("Resource added");
+  // Handle file selection (only allow one video)
+  const handleBeforeUpload = (file: File) => {
+    if (!file.type.startsWith("video/")) {
+      message.error("Only video files are allowed!");
+      return Upload.LIST_IGNORE;
+    }
+
+    if (video) {
+      message.warning("You can only upload one video per lesson.");
+      return Upload.LIST_IGNORE;
+    }
+
+    const id = `${file.name}-${Date.now()}`;
+    const preview = URL.createObjectURL(file);
+    setVideo({ id, file, preview });
+    message.success(`${file.name} added successfully`);
+    return false; // prevent auto upload
   };
 
-  const handleDelete = (id: number) => {
-    setResources((prev) => {
-      const filtered = prev.filter((r) => r.id !== id);
-      // reindex ids
-      return filtered.map((r, i) => ({ ...r, id: i + 1 }));
-    });
+  // Remove selected video
+  const handleRemoveVideo = () => {
+    if (video) {
+      URL.revokeObjectURL(video.preview);
+      setVideo(null);
+      message.info("Video removed");
+    }
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
+  // Handle form submit
+ const handleSubmit = async () => {
+  try {
+    // Validate form fields
+    const values = await form.validateFields();
 
-    setResources((prev) => {
-      const oldIndex = prev.findIndex((r) => r.id.toString() === active.id);
-      const newIndex = prev.findIndex((r) => r.id.toString() === over.id);
-      if (oldIndex < 0 || newIndex < 0) return prev;
-      const next = Array.from(prev);
-      const [moved] = next.splice(oldIndex, 1);
-      next.splice(newIndex, 0, moved);
-      return next.map((r, i) => ({ ...r, id: i + 1 }));
-    });
-  };
+    // Check if a video is selected
+    if (!video) {
+      message.warning("Please upload a video before saving.");
+      return;
+    }
 
-const handleSubmit = () => {
-  form
-    .validateFields()
-    .then((values) => {
-      const fd = new FormData();
-      fd.append("title", values.title);
+    // Check for courseId (either passed from parent or from the URL)
+    if (!runtimeCourseId) {
+      message.error("Course ID is missing. Cannot save lesson.");
+      return;
+    }
 
-      // Separate resources by type
-      const textResources: { content: string | undefined; type: "link" | "text"; position: number; }[] = [];
+    // Prepare FormData
+    const formData = new FormData();
+    formData.append("title", values.title);
+    formData.append("description", values.description || "");
+    formData.append("resources", video.file); // key must match backend
 
-      resources.forEach((r, idx) => {
-        if (r.type === "text" || r.type === "link") {
-          // store text & link in JSON (content + type)
-          textResources.push({
-            content: r.type === "link" ? r.url : r.name,
-            type: r.type,
-            position: idx + 1,
-          });
-        } else if (r.file) {
-          // send files directly — multer will handle them
-          fd.append("resources", r.file);
-        }
-      });
+    // Debug log all FormData entries
+    console.log("📦 FormData contents:");
+    for (const [key, val] of formData.entries()) {
+      console.log(key, val);
+    }
 
-      // Append JSON text resources
-      if (textResources.length > 0) {
-        fd.append("textResources", JSON.stringify(textResources));
-      }
+    // Check if the file exists in FormData
+    if (formData.has("resources")) {
+      // console.log("✅ Video file found in FormData:", formData.get("resources"));
+      console.log(
+        formData.get("title"),
+        formData.get("description"),
+        runtimeCourseId,
+        formData.get("resources")
+      );
+    } else {
+      console.log("❌ No video file found in FormData");
+      message.error("Video file is missing!");
+      return;
+    }
 
-      onSubmit(fd);
-      form.resetFields();
-      setResources([]);
-      setNewResource("");
-      setResourceType(null);
-      onClose();
+  // Call the parent onSubmit function
+  await onSubmit(runtimeCourseId, formData);
 
-      console.log("📤 FormData content:");
-for (let pair of fd.entries()) {
-  console.log(pair[0], pair[1]);
-}
-
-    })
-    .catch(() => message.error("Please complete required fields"));
+    message.success("Lesson saved successfully!");
+    form.resetFields();
+    handleRemoveVideo();
+    onClose();
+  } catch (err) {
+    console.error("❌ Validation/Submit Error:", err);
+    message.error("Failed to save lesson. Please try again.");
+  }
 };
 
-
-  const uploadProps = {
-    beforeUpload: (file: File) => {
-      // don't stop propagation here — Upload must open dialog
-      handleAddResource(file);
-      return false; // prevent Upload from trying to POST by itself
-    },
-    showUploadList: false,
-    accept: getAccept(),
-  };
 
   return (
     <Modal
       title="Add Lesson"
       open={visible}
-      onCancel={onClose}
+      onCancel={() => {
+        handleRemoveVideo();
+        form.resetFields();
+        onClose();
+      }}
       onOk={handleSubmit}
       okText="Save Lesson"
-      width={700}
+      width={600}
       destroyOnClose
     >
       <Form layout="vertical" form={form}>
+        {/* Lesson Title */}
         <Form.Item
           label="Lesson Title"
           name="title"
@@ -308,83 +166,83 @@ for (let pair of fd.entries()) {
           <Input placeholder="Enter lesson title" />
         </Form.Item>
 
-        <div style={{ marginTop: 12 }}>
-          <Text strong>Lesson Resources</Text>
+        {/* Description */}
+        <Form.Item
+          label="Description"
+          name="description"
+          rules={[{ required: true, message: "Please enter lesson description" }]}
+        >
+          <Input.TextArea rows={4} placeholder="Describe this lesson" />
+        </Form.Item>
 
-          <Space style={{ marginTop: 8, marginBottom: 12 }}>
-            <Button
-              icon={<FileTextOutlined />}
-              type={resourceType === "text" ? "primary" : "default"}
-              onClick={() => setResourceType("text")}
-            />
-            <Button
-              icon={<FileOutlined />}
-              type={resourceType === "image" ? "primary" : "default"}
-              onClick={() => setResourceType("image")}
-            />
-            <Button
-              icon={<PlayCircleOutlined />}
-              type={resourceType === "video" ? "primary" : "default"}
-              onClick={() => setResourceType("video")}
-            />
-            <Button
-              icon={<LinkOutlined />}
-              type={resourceType === "link" ? "primary" : "default"}
-              onClick={() => setResourceType("link")}
-            />
-            <Button
-              icon={<FilePdfOutlined />}
-              type={resourceType === "pdf" ? "primary" : "default"}
-              onClick={() => setResourceType("pdf")}
-            />
-          </Space>
-
-          {/* conditional input/upload */}
-          {resourceType === "text" || resourceType === "link" ? (
-            <Space style={{ display: "flex", marginBottom: 12 }}>
-              <Input
-                placeholder={resourceType === "link" ? "Enter URL" : "Enter text content"}
-                value={newResource}
-                onChange={(e) => setNewResource(e.target.value)}
-                onPressEnter={() => handleAddResource()}
-              />
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={() => handleAddResource()}
-              >
-                Add
-              </Button>
-            </Space>
-          ) : resourceType === "image" || resourceType === "video" || resourceType === "pdf" ? (
-            <Upload {...uploadProps}>
-              <Button icon={<UploadOutlined />}>Upload {resourceType?.toUpperCase()}</Button>
-            </Upload>
-          ) : null}
-
-          {/* resource list with drag & drop */}
-          <div style={{ marginTop: 8 }}>
-            {resources.length === 0 ? (
-              <Text type="secondary">No resources added yet.</Text>
-            ) : (
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext
-                  items={resources.map((r) => r.id.toString())}
-                  strategy={verticalListSortingStrategy}
-                >
-                  {resources.map((r) => (
-                    <SortableResourceItem key={r.id} resource={r} onDelete={() => handleDelete(r.id)} />
-                  ))}
-                </SortableContext>
-              </DndContext>
+        {/* Video Upload */}
+        <Form.Item label="Upload Lesson Video">
+          <Upload
+            beforeUpload={handleBeforeUpload}
+            showUploadList={false}
+            accept="video/*"
+            multiple={false}
+          >
+            {!video && (
+              <Button icon={<UploadOutlined />}>Select Video</Button>
             )}
-          </div>
-        </div>
+          </Upload>
+
+          {video && (
+            <div
+              style={{
+                marginTop: 16,
+                position: "relative",
+                border: "1px solid #f0f0f0",
+                borderRadius: 10,
+                padding: 8,
+                textAlign: "center",
+                background: "#fff",
+              }}
+            >
+              <Button
+                type="text"
+                icon={<DeleteOutlined style={{ color: "red", fontSize: 18 }} />}
+                onClick={handleRemoveVideo}
+                style={{
+                  position: "absolute",
+                  top: 6,
+                  right: 6,
+                  zIndex: 3,
+                }}
+                aria-label="remove-video"
+              />
+
+              <video
+                src={video.preview}
+                width="90%"
+                controls
+                style={{
+                  borderRadius: 6,
+                  background: "#000",
+                  maxHeight: 180,
+                }}
+              />
+
+              <Text
+                style={{
+                  display: "block",
+                  marginTop: 8,
+                  fontSize: 13,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+                title={video.file.name}
+              >
+                <PlayCircleOutlined /> {video.file.name}
+              </Text>
+            </div>
+          )}
+        </Form.Item>
       </Form>
     </Modal>
   );
-}
+};
+
+export default AddLessonModal;

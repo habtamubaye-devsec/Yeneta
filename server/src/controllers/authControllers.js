@@ -111,7 +111,8 @@ const login = asyncHandler(async (req, res) => {
   res.cookie("token", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    // In production we need None+Secure for cross-site redirects (Stripe). In dev use 'lax'
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     maxAge: 3 * 24 * 60 * 60 * 1000, // 3 days
   });
 
@@ -154,7 +155,7 @@ const logout = asyncHandler(async (req, res) => {
   res.cookie("token", "", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     expires: new Date(0),
   });
 

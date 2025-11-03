@@ -31,8 +31,6 @@ export const fetchCourses = createAsyncThunk(
       search?: string;
       category?: string;
       level?: string;
-      minPrice?: number;
-      maxPrice?: number;
     },
     { rejectWithValue }
   ) => {
@@ -41,8 +39,10 @@ export const fetchCourses = createAsyncThunk(
       if (filters?.search) params.append("search", filters.search);
       if (filters?.category) params.append("category", filters.category);
       if (filters?.level) params.append("level", filters.level);
-      if (filters?.minPrice) params.append("minPrice", filters.minPrice.toString());
-      if (filters?.maxPrice) params.append("maxPrice", filters.maxPrice.toString());
+      if (filters?.minPrice)
+        params.append("minPrice", filters.minPrice.toString());
+      if (filters?.maxPrice)
+        params.append("maxPrice", filters.maxPrice.toString());
 
       const { data } = await axios.get(`${API_URL}?${params.toString()}`);
       return data.data;
@@ -58,9 +58,35 @@ export const getCourseById = createAsyncThunk(
   async (id: string, { rejectWithValue }) => {
     try {
       const { data } = await axios.get(`${API_URL}/${id}`);
-      return data;
+      // Normalize backend variations: some endpoints return { data: course } or { course } or course directly
+      return data.data ?? data.course ?? data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data || "Course not found");
+    }
+  }
+);
+// ✅ Fetch Courses by Instructor
+export const fetchCoursesByInstructor = createAsyncThunk(
+  "courses/fetchByInstructor",
+  async (_, { rejectWithValue, getState }) => {
+    try {
+      const token = (getState() as any).auth.user?.token;
+      const config = {
+        headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true,
+      };
+
+      const { data } = await axios.get(`${API_URL}/instructor-courses`, config);
+
+      console.log("🎯 Instructor courses response:", data);
+
+      // ✅ Use 'data.data' since backend returns that key
+      return data.data || [];
+    } catch (error: any) {
+      console.error("❌ Fetch instructor courses error:", error);
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch instructor courses"
+      );
     }
   }
 );
@@ -79,9 +105,7 @@ export const updateCourse = createAsyncThunk(
       });
       return data;
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data || "Failed to update course"
-      );
+      return rejectWithValue(error.response?.data || "Failed to update course");
     }
   }
 );
@@ -112,7 +136,6 @@ export const togglePublishCourse = createAsyncThunk(
     }
   }
 );
-
 
 // ✅ Delete Course
 export const deleteCourse = createAsyncThunk(

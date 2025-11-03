@@ -24,26 +24,23 @@ export const fetchLessons = createAsyncThunk(
 // 🔹 Create a new lesson
 export const createLesson = createAsyncThunk(
   "lessons/createLesson",
-  async (formData: FormData, { rejectWithValue, getState }: any) => {
+  async (
+    { courseId, formData }: { courseId: string; formData: FormData },
+    { rejectWithValue }
+  ) => {
     try {
-      const { courses } = getState();
-      const courseId = courses?.selectedCourse?._id || formData.get("courseId");
-
       if (!courseId) throw new Error("Missing course ID");
-
-      const res = await axios.post(
-        `${API_BASE}/${courseId}/lessons`,
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-          withCredentials: true,
-        }
-      );
-
+      console.log("📦 Creating lesson with FormData:", formData);
+      const res = await axios.post(`${API_BASE}/${courseId}/lessons`, formData, {
+        withCredentials: true,
+      });
+      console.log("❇️ Create lesson response:", res.data);
       return res.data.lesson;
     } catch (err: any) {
       console.error("❌ Create lesson error:", err);
-      return rejectWithValue(err.response?.data?.message || "Failed to create lesson");
+      return rejectWithValue(
+        err.response?.data?.message || "Failed to create lesson"
+      );
     }
   }
 );
@@ -51,10 +48,14 @@ export const createLesson = createAsyncThunk(
 // ✅ Update existing lesson
 export const updateLesson = createAsyncThunk(
   "lessons/update",
-  async ({ id, lessonData }: { id: string; lessonData: FormData }, { rejectWithValue }) => {
+  async (
+    { courseId, id, lessonData }: { courseId: string; id: string; lessonData: FormData },
+    { rejectWithValue }
+  ) => {
     try {
-      const res = await axios.put(`${LESSON_URL}/${id}`, lessonData, {
-        headers: { "Content-Type": "multipart/form-data" },
+      if (!courseId) throw new Error("Missing course ID");
+      const res = await axios.put(`${API_BASE}/${courseId}/lessons/${id}`, lessonData, {
+        withCredentials: true,
       });
       return res.data.lesson;
     } catch (error: any) {
@@ -66,9 +67,13 @@ export const updateLesson = createAsyncThunk(
 // ✅ Delete lesson
 export const deleteLesson = createAsyncThunk(
   "lessons/delete",
-  async (id: string, { rejectWithValue }) => {
+  async (
+    { courseId, id }: { courseId: string; id: string },
+    { rejectWithValue }
+  ) => {
     try {
-      await axios.delete(`${LESSON_URL}/${id}`);
+      if (!courseId) throw new Error("Missing course ID");
+      await axios.delete(`${API_BASE}/${courseId}/lessons/${id}`, { withCredentials: true });
       return id;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || "Failed to delete lesson");

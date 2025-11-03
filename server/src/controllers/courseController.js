@@ -216,6 +216,44 @@ const getCourseById = async (req, res) => {
   }
 };
 
+//Get course by instructor
+// Get courses by instructor
+const getCoursesByInstructor = async (req, res) => {
+  try {
+    // Ensure user is authenticated
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized: Instructor not found",
+      });
+    }
+
+    // Fetch all courses created by the logged-in instructor
+    const courses = await Course.find({ instructor: req.user._id }).sort({ createdAt: -1 });
+
+    // Check if instructor has no courses
+    if (!courses.length) {
+      return res.status(404).json({
+        success: false,
+        message: "No courses found for this instructor",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      count: courses.length,
+      data: courses,
+    });
+  } catch (err) {
+    console.error("❌ Error fetching courses:", err.message);
+    res.status(500).json({
+      success: false,
+      message: "Server error while fetching courses",
+    });
+  }
+};
+
+
 // Instructor stats
 const getStats = async (req, res) => {
   try {
@@ -248,5 +286,6 @@ export {
   deleteCourse,
   getAllCourses,
   getCourseById,
+  getCoursesByInstructor,
   getStats,
 };

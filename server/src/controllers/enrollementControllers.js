@@ -1,23 +1,155 @@
+import Stripe from "stripe";
 import Enrollment from "../models/Enrollment.js";
 import Course from "../models/Course.js";
 
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+// ========================
+// Create Stripe checkout session
+// POST /api/enrollment/checkout/:courseId
+// ========================
+export const createCheckoutSession = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const course = await Course.findById(courseId);
+
+    if (!course)
+      return res.status(404).json({ success: false, message: "Course not found" });
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      mode: "payment",
+      line_items: [
+        {
+          price_data: {
+            currency: "usd",
+            product_data: { name: course.title },
+            unit_amount: course.price * 100, // in cents
+          },
+          quantity: 1,
+        },
+      ],
+  // include courseId and session id so frontend can confirm enrollment and redirect
+  success_url: `${process.env.FRONTEND_URL}/enrollment/success?courseId=${course._id}&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.FRONTEND_URL}/cancel`,
+      metadata: {
+        userId: req.user._id.toString(),
+        courseId: course._id.toString(),
+      },
+    });
+
+    res.status(200).json({ success: true, url: session.url });
+  } catch (err) {
+    console.error("Checkout session error:", err.message);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ========================
+// Stripe webhook
+// POST /api/enrollment/webhook
+// ========================
+export const handleStripeWebhook = async (req, res) => {
+  const sig = req.headers["stripe-signature"];
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(
+      req.body,
+      sig,
+      process.env.STRIPE_WEBHOOK_SECRET
+    );
+  } catch (err) {
+    console.error("Webhook signature verification failed:", err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  if (event.type === "checkout.session.completed") {
+    const session = event.data.object;
+
+    try {
+      const userId = session.metadata.userId;
+      const courseId = session.metadata.courseId;
+
+      // Prevent duplicate enrollment
+      const existing = await Enrollment.findOne({ user: userId, course: courseId });
+      if (!existing) {
+        const course = await Course.findById(courseId);
+        await Enrollment.create({
+          user: userId,
+          course: courseId,
+          pricePaid: course.price,
+          completedLessons: [],
+        });
+        console.log("Enrollment created successfully!");
+      }
+    } catch (err) {
+      console.error("Error creating enrollment:", err);
+    }
+  }
+
+  res.json({ received: true });
+};
+
+// ========================
+// Webhook test helper (local dev)
+// POST /api/enrollment/webhook-test
+// Body: { sessionId: string }
+// Protected route so only authenticated users can trigger it.
+// This allows local testing without Stripe webhook delivery.
+export const webhookTest = async (req, res) => {
+  try {
+    const { sessionId } = req.body;
+    if (!sessionId) return res.status(400).json({ success: false, message: "sessionId required" });
+
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    if (!session) return res.status(404).json({ success: false, message: "Session not found" });
+
+    const userId = session.metadata?.userId;
+    const courseId = session.metadata?.courseId;
+    if (!userId || !courseId)
+      return res.status(400).json({ success: false, message: "Missing metadata on session" });
+
+    const existing = await Enrollment.findOne({ user: userId, course: courseId });
+    if (existing) return res.status(200).json({ success: true, message: "Already enrolled" });
+
+    const course = await Course.findById(courseId);
+    if (!course) return res.status(404).json({ success: false, message: "Course not found" });
+
+    const enrollment = await Enrollment.create({
+      user: userId,
+      course: courseId,
+      pricePaid: course.price,
+      completedLessons: [],
+    });
+
+    console.log("[webhook-test] Enrollment created successfully for session", sessionId);
+    res.status(201).json({ success: true, data: enrollment });
+  } catch (err) {
+    console.error("webhookTest error:", err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ========================
+// Manual enrollment (optional, for free courses/admin)
 // POST /api/enroll/:courseId
+// ========================
 export const enrollInCourse = async (req, res) => {
   try {
     const { courseId } = req.params;
 
-    // Check if already enrolled
     const existing = await Enrollment.findOne({
       user: req.user._id,
       course: courseId,
     });
 
-    if (existing) {
+    if (existing)
       return res.status(400).json({ success: false, message: "Already enrolled" });
-    }
 
     const course = await Course.findById(courseId);
-    if (!course) return res.status(404).json({ success: false, message: "Course not found" });
+    if (!course)
+      return res.status(404).json({ success: false, message: "Course not found" });
 
     const enrollment = await Enrollment.create({
       user: req.user._id,
@@ -32,7 +164,10 @@ export const enrollInCourse = async (req, res) => {
   }
 };
 
+// ========================
+// Get all enrollments for the logged-in user
 // GET /api/enroll/my
+// ========================
 export const getMyEnrollments = async (req, res) => {
   try {
     const enrollments = await Enrollment.find({ user: req.user._id }).populate("course");
@@ -42,16 +177,21 @@ export const getMyEnrollments = async (req, res) => {
   }
 };
 
+// ========================
+// Get completed lessons for a course
 // GET /api/enroll/:courseId/progress
+// ========================
 export const getCourseProgress = async (req, res) => {
   try {
     const { courseId } = req.params;
+
     const enrollment = await Enrollment.findOne({
       user: req.user._id,
       course: courseId,
     }).populate("completedLessons");
 
-    if (!enrollment) return res.status(404).json({ success: false, message: "Not enrolled" });
+    if (!enrollment)
+      return res.status(404).json({ success: false, message: "Not enrolled" });
 
     res.status(200).json({ success: true, data: enrollment.completedLessons });
   } catch (err) {
@@ -59,7 +199,10 @@ export const getCourseProgress = async (req, res) => {
   }
 };
 
+// ========================
+// Update lesson progress
 // PATCH /api/enroll/:courseId/progress
+// ========================
 export const updateLessonProgress = async (req, res) => {
   try {
     const { courseId } = req.params;
@@ -70,7 +213,8 @@ export const updateLessonProgress = async (req, res) => {
       course: courseId,
     });
 
-    if (!enrollment) return res.status(404).json({ success: false, message: "Not enrolled" });
+    if (!enrollment)
+      return res.status(404).json({ success: false, message: "Not enrolled" });
 
     if (!enrollment.completedLessons.includes(lessonId)) {
       enrollment.completedLessons.push(lessonId);
@@ -83,7 +227,10 @@ export const updateLessonProgress = async (req, res) => {
   }
 };
 
+// ========================
+// Generate course completion certificate
 // GET /api/enroll/:courseId/certificate
+// ========================
 export const generateCertificate = async (req, res) => {
   try {
     const { courseId } = req.params;
@@ -93,11 +240,15 @@ export const generateCertificate = async (req, res) => {
       course: courseId,
     }).populate("course user completedLessons");
 
-    if (!enrollment) return res.status(404).json({ success: false, message: "Not enrolled" });
+    if (!enrollment)
+      return res.status(404).json({ success: false, message: "Not enrolled" });
 
     // Optional: check all lessons completed
     if (enrollment.completedLessons.length < enrollment.course.lessons.length) {
-      return res.status(400).json({ success: false, message: "Complete all lessons first" });
+      return res.status(400).json({
+        success: false,
+        message: "Complete all lessons first",
+      });
     }
 
     const certificate = {

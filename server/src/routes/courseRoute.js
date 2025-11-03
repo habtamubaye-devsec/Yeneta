@@ -5,6 +5,7 @@ import {
   deleteCourse,
   getAllCourses,
   getCourseById,
+  getCoursesByInstructor,
   getStats,
   togglePublishCourse,
 } from "../controllers/courseController.js";
@@ -12,6 +13,9 @@ import { protect, authorizeRoles } from "../middlewares/authMiddleware.js";
 import upload from "../middlewares/upload.js";
 
 const router = express.Router();
+
+//Instructor only
+router.get("/instructor-courses", protect, authorizeRoles("instructor"),getCoursesByInstructor);
 
 // Public
 router.get("/", getAllCourses);

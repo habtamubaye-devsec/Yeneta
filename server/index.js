@@ -6,6 +6,8 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import passport from "passport";
 import session from "express-session";
+import bodyParser from "body-parser";
+
 
 import "./src/config/passport.js"; // ✅ now env vars are defined
 import connectDB from "./src/config/db-connection.js";
@@ -42,6 +44,9 @@ connectDB();
 
 app.use(passport.initialize());
 app.use(passport.session());
+
+// Stripe webhook requires raw body
+app.use("/api/enrollment/webhook", bodyParser.raw({ type: "application/json" }));
 
 app.get("/", (req, res) => {
   res.send("Server is running!");

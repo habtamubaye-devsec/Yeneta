@@ -1,5 +1,5 @@
 // src/features/lesson/lessonSlice.ts
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { fetchLessons, createLesson, updateLesson, deleteLesson } from "./lessonThunks";
 
 interface Resource {

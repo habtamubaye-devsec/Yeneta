@@ -1,34 +1,87 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle2, Circle, ChevronLeft, ChevronRight, FileText, PlayCircle } from 'lucide-react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+
+type Lesson = any;
+type Course = any;
 
 export default function LessonPlayer() {
   const { courseId, lessonId } = useParams();
-  const [completedLessons, setCompletedLessons] = useState<number[]>([1, 2]);
+  const navigate = useNavigate();
 
-  const course = {
-    id: courseId,
-    title: 'React Fundamentals',
-    lessons: [
-      { id: 1, title: 'Introduction to React', type: 'video', duration: '15:30', videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ' },
-      { id: 2, title: 'JSX and Components', type: 'video', duration: '20:15', videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ' },
-      { id: 3, title: 'Props and State', type: 'video', duration: '18:45', videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ' },
-      { id: 4, title: 'Hooks Overview', type: 'article', duration: '10 min read' },
-      { id: 5, title: 'Building a Todo App', type: 'video', duration: '25:00', videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ' },
-    ]
-  };
+  const [course, setCourse] = useState<Course | null>(null);
+  const [completedLessons, setCompletedLessons] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const currentLessonIndex = course.lessons.findIndex(l => l.id === Number(lessonId));
-  const currentLesson = course.lessons[currentLessonIndex];
-  const progress = (completedLessons.length / course.lessons.length) * 100;
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        setLoading(true);
+        // fetch course
+        const courseRes = await axios.get(`http://localhost:8000/api/courses/${courseId}`);
+        const fetchedCourse = courseRes.data.data ?? courseRes.data.course ?? courseRes.data;
 
-  const markComplete = () => {
-    if (!completedLessons.includes(currentLesson.id)) {
-      setCompletedLessons([...completedLessons, currentLesson.id]);
+        // fetch enrollment progress (completed lessons)
+        let completed: string[] = [];
+        try {
+          const progRes = await axios.get(`http://localhost:8000/api/enrollment/${courseId}/progress`, { withCredentials: true });
+          completed = progRes.data.data || [];
+        } catch (err) {
+          // ignore — user might not be enrolled yet or not authenticated
+          completed = [];
+        }
+
+        if (!mounted) return;
+        setCourse(fetchedCourse);
+        setCompletedLessons(completed.map((c: any) => c._id ? String(c._id) : String(c)));
+      } catch (err: any) {
+        console.error('Failed to load course or progress', err);
+        if (mounted) setError(err.response?.data?.message || 'Failed to load course');
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    load();
+    return () => { mounted = false; };
+  }, [courseId]);
+
+  if (loading) return (
+    <DashboardLayout>
+      <div style={{ padding: 32 }}>Loading course...</div>
+    </DashboardLayout>
+  );
+
+  if (error || !course) return (
+    <DashboardLayout>
+      <div style={{ padding: 32, color: 'red' }}>{error || 'Course not found'}</div>
+    </DashboardLayout>
+  );
+
+  const lessons: Lesson[] = course.lessons || [];
+  const currentLessonIndex = lessons.findIndex((l: any) => String(l._id ?? l.id) === String(lessonId));
+  const currentLesson: Lesson | undefined = currentLessonIndex >= 0 ? lessons[currentLessonIndex] : lessons[0];
+  const progress = lessons.length ? Math.round((completedLessons.length / lessons.length) * 100) : 0;
+
+  const markComplete = async () => {
+    if (!currentLesson) return;
+    const lessonIdStr = String(currentLesson._id ?? currentLesson.id);
+    if (completedLessons.includes(lessonIdStr)) return;
+
+    try {
+      await axios.patch(`http://localhost:8000/api/enrollment/${courseId}/progress`, { lessonId: lessonIdStr }, { withCredentials: true });
+      setCompletedLessons(prev => [...prev, lessonIdStr]);
+    } catch (err: any) {
+      console.error('Failed to mark lesson complete', err);
+      // If 401, navigate to login
+      if (err.response?.status === 401) navigate('/login');
     }
   };
 

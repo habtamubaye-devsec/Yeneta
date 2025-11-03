@@ -2,8 +2,11 @@
 import { ConfigProvider, App as AntApp } from "antd";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { Provider } from "react-redux"; // ✅ Added Redux provider
+import { Provider, useDispatch } from "react-redux"; // ✅ Added Redux provider
 import { store } from "@/app/store"; // ✅ Import Redux store
+import { useEffect, useState } from "react";
+import { Spin } from 'antd';
+import { fetchCurrentUser } from "./features/auth/authThunks";
 import { antdTheme } from "./config/antdTheme";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -13,9 +16,9 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 
 // // ✅ Student Pages
-// import StudentDashboard from "./pages/student/StudentDashboard";
-// import MyCourses from "./pages/student/MyCourses";
-// import LessonPlayer from "./pages/student/LessonPlayer";
+import StudentDashboard from "./pages/student/StudentDashboard";
+import MyCourses from "./pages/student/MyCourses";
+import LessonPlayer from "./pages/student/LessonPlayer";
 // import Certificates from "./pages/student/Certificates";
 // import Reviews from "./pages/student/Reviews";
 // import Profile from "./pages/student/Profile";
@@ -24,7 +27,6 @@ import Register from "./pages/Register";
 import InstructorDashboard from "./pages/instructor/InstructorDashboard";
 import InstructorCourses from "./pages/instructor/MyCourses";
 import CreateCourse from "./pages/instructor/CreateCourse";
-import ManageCourse from "./pages/instructor/ManageLesson";
 import ManageLessons from "./pages/instructor/ManageLesson";
 // import Feedback from "./pages/instructor/Feedback";
 // import Analytics from "./pages/instructor/Analytics";
@@ -43,15 +45,45 @@ import UserManagement from "./pages/admin/UserManagement";
 // import SystemSettings from "./pages/superadmin/SystemSettings";
 
 // // ✅ Course Pages
-// import BrowseCourses from "./pages/courses/BrowseCourses";
-// import CourseDetail from "./pages/courses/CourseDetail";
+import BrowseCourses from "./pages/courses/BrowseCourses";
+import CourseDetail from "./pages/courses/CourseDetail";
+import EnrollmentSuccess from "./pages/enrollment/Success";
 
 // import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <Provider store={store}> {/* ✅ Redux replaces AuthProvider */}
+const InnerApp = () => {
+  const dispatch = useDispatch();
+  const [initialized, setInitialized] = useState(false);
+
+  useEffect(() => {
+    // Try to populate auth state from server cookie on app start/refresh
+    // wait for the thunk to finish before rendering routes so ProtectedRoute
+    // doesn't redirect prematurely while we validate the session.
+    let mounted = true;
+    (async () => {
+      try {
+        await dispatch(fetchCurrentUser() as any);
+      } catch (err) {
+        // ignore — fetchCurrentUser will set auth state appropriately
+      } finally {
+        if (mounted) setInitialized(true);
+      }
+    })();
+
+    return () => { mounted = false; };
+  }, [dispatch]);
+
+  if (!initialized) {
+    return (
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  return (
     <QueryClientProvider client={queryClient}>
       <ConfigProvider theme={antdTheme}>
         <AntApp>
@@ -63,14 +95,7 @@ const App = () => (
               <Route path="/register" element={<Register />} />
 
               {/* Courses */}
-              {/* <Route
-                path="/courses"
-                element={
-                  <ProtectedRoute>
-                    <BrowseCourses />
-                  </ProtectedRoute>
-                }
-              />
+              <Route path="/courses" element={<BrowseCourses />} />
               <Route
                 path="/courses/:id"
                 element={
@@ -79,6 +104,7 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route path="/enrollment/success" element={<EnrollmentSuccess />} />
               <Route
                 path="/courses/:courseId/lesson/:lessonId"
                 element={
@@ -86,10 +112,10 @@ const App = () => (
                     <LessonPlayer />
                   </ProtectedRoute>
                 }
-              /> */}
+              />
 
               {/* Student */}
-              {/* <Route
+              <Route
                 path="/student"
                 element={
                   <ProtectedRoute allowedRoles={["student"]}>
@@ -105,23 +131,23 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
-              <Route
+              {/* <Route
                 path="/student/certificates"
                 element={
                   <ProtectedRoute allowedRoles={["student"]}>
                     <Certificates />
                   </ProtectedRoute>
                 }
-              />
-              <Route
+              /> */}
+              {/* <Route
                 path="/student/reviews"
                 element={
                   <ProtectedRoute allowedRoles={["student"]}>
                     <Reviews />
                   </ProtectedRoute>
                 }
-              />
-              <Route
+              /> */}
+              {/* <Route
                 path="/student/profile"
                 element={
                   <ProtectedRoute allowedRoles={["student"]}>
@@ -263,6 +289,12 @@ const App = () => (
         </AntApp>
       </ConfigProvider>
     </QueryClientProvider>
+  );
+};
+
+const App = () => (
+  <Provider store={store}> {/* ✅ Redux replaces AuthProvider */}
+    <InnerApp />
   </Provider>
 );
 

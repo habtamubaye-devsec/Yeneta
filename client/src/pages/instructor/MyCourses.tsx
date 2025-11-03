@@ -16,7 +16,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { AppDispatch, RootState } from "@/redux/store";
 import {
-  fetchCourses,
   deleteCourse,
   updateCourse,
   togglePublishCourse,
@@ -24,6 +23,7 @@ import {
 import { message, Spin, Modal, Form, Input, Select, Upload, Image } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import { fetchCategories } from "@/features/categories/categoryThunks";
+import { fetchCoursesByInstructor } from "../../features/courses/courseThunks";
 
 const { Option } = Select;
 
@@ -42,7 +42,7 @@ export default function MyCourses() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   useEffect(() => {
-    dispatch(fetchCourses());
+    dispatch(fetchCoursesByInstructor());
     dispatch(fetchCategories());
   }, [dispatch]);
 
@@ -51,7 +51,7 @@ export default function MyCourses() {
     try {
       await dispatch(deleteCourse(id)).unwrap();
       message.success("✅ Course deleted successfully");
-      dispatch(fetchCourses());
+      dispatch(fetchCoursesByInstructor());
     } catch {
       message.error("❌ Failed to delete course");
     }
@@ -103,7 +103,7 @@ export default function MyCourses() {
       ).unwrap();
       message.success("✅ Course updated successfully");
       setIsEditModalOpen(false);
-      dispatch(fetchCourses());
+      dispatch(fetchCoursesByInstructor());
     } catch (err: any) {
       message.error(err?.message || "❌ Failed to update course");
     }
@@ -121,7 +121,7 @@ export default function MyCourses() {
           : "Course published successfully"
       );
 
-      dispatch(fetchCourses());
+      dispatch(fetchCoursesByInstructor());
     } catch (error: any) {
       message.error(error?.message || "Failed to change publish status");
     }
