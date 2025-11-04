@@ -53,9 +53,7 @@ export default function CourseDetail() {
 
   // Single enrollment for this course
   const myEnrollment = currentEnrollment;
-  const enrollmentData = {enrollments};
-  const progress =  enrollmentData.enrollments[0]?.progress;
-console.log("Progress:", progress); // e.g., 50
+  const progress =  myEnrollment?.progress || 0;
 
   // Fetch course and related data
   useEffect(() => {
@@ -383,7 +381,7 @@ console.log("Progress:", progress); // e.g., 50
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <Text type="secondary">Progress</Text>
-                  <Text strong>{myEnrollment?.progress}%</Text>
+                  <Text strong>{progress}%</Text>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <Text type="secondary">Status</Text>

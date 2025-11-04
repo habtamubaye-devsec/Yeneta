@@ -41,6 +41,7 @@ const initialState: EnrollmentState = {
 };
 
 console.log(initialState.enrollments); // Debugging line
+console.log(initialState.currentEnrollment); // Debugging line
 
 // =========================
 // Slice
@@ -218,14 +219,10 @@ const enrollmentSlice = createSlice({
           }
 
           const course = e.course || e.courseId || {};
+          const progress = e.progress || 0;
           const lessons = Array.isArray(course.lessons) ? course.lessons : [];
-          const completed = Array.isArray(e.completedLessons)
-            ? e.completedLessons.length
-            : 0;
-          const progress = lessons.length
-            ? Math.round((completed / lessons.length) * 100)
-            : 0;
-
+          
+          
           state.currentEnrollment = { ...e, course, lessons, progress };
         }
       )
