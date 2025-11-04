@@ -19,7 +19,7 @@ import Register from "./pages/Register";
 import StudentDashboard from "./pages/student/StudentDashboard";
 import MyCourses from "./pages/student/MyCourses";
 import LessonPlayer from "./pages/student/LessonPlayer";
-// import Certificates from "./pages/student/Certificates";
+import Certificates from "./pages/student/Certificates";
 // import Reviews from "./pages/student/Reviews";
 // import Profile from "./pages/student/Profile";
 
@@ -131,14 +131,14 @@ const InnerApp = () => {
                   </ProtectedRoute>
                 }
               />
-              {/* <Route
+              <Route
                 path="/student/certificates"
                 element={
                   <ProtectedRoute allowedRoles={["student"]}>
                     <Certificates />
                   </ProtectedRoute>
                 }
-              /> */}
+              />
               {/* <Route
                 path="/student/reviews"
                 element={

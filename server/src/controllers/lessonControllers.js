@@ -49,12 +49,21 @@ export const createLesson = async (req, res) => {
       position,
       videoUrl: result.secure_url,
       videoPublicId: result.public_id,
+      videoDuration: result.duration,
     });
 
+    // ✅ Push lesson ID to the course.lessons array
+    await Course.findByIdAndUpdate(
+      courseId,
+      { $push: { lessons: lesson._id } },
+      { new: true, useFindAndModify: false }
+    );
+    
     res.status(201).json({
       success: true,
       message: "Lesson created successfully.",
       data: lesson,
+      duration: result.duration,
     });
   } catch (error) {
     console.error("❌ createLesson error:", error);

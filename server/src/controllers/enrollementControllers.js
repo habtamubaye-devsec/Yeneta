@@ -12,10 +12,14 @@ export const createCheckoutSession = async (req, res) => {
   try {
     const { courseId } = req.params;
     const course = await Course.findById(courseId);
+    const enrollment = await Enrollment.findOne({
+      course: courseId,
+    });
 
     if (!course)
       return res.status(404).json({ success: false, message: "Course not found" });
-
+    if (enrollment)
+      return res.status(400).json({ success: false, message: "Already enrolled" });
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "payment",
@@ -155,6 +159,8 @@ export const enrollInCourse = async (req, res) => {
       user: req.user._id,
       course: courseId,
       pricePaid: course.price,
+      currentLesson: course.lessons[0]._id,
+      progress: 0,
       completedLessons: [],
     });
 
@@ -172,6 +178,49 @@ export const getMyEnrollments = async (req, res) => {
   try {
     const enrollments = await Enrollment.find({ user: req.user._id }).populate("course");
     res.status(200).json({ success: true, data: enrollments });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ========================
+// Get all enrollments  by course
+// GET /api/enroll/courseId
+// ========================
+export const getEnrollmentsByCourse = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const userId = req.user._id; // correct way
+    if (!userId) {
+      return res.status(404).json({ success: false, message: "user not found"})
+    }
+
+    if (!courseId) {
+      return res.status(404).json({ success: false, message: "course not found"})
+    }
+
+    const enrollment = await Enrollment.findOne({ course: courseId, user: userId });
+    if (!enrollment) {
+      return res.status(404).json({ success: false, message: 'Enrollment not found',  courseId });
+    }
+
+    res.status(200).json({ success: true, data: enrollment });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+
+// ========================
+// Get all enrollments length by course
+// GET /api/enroll/length/courseId
+// ========================
+export const getEnrollmentsLengthByCourse = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+
+    const enrollments = await Enrollment.find({ course: courseId });
+    res.status(200).json({ success: true, data: enrollments.length ,});
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -208,24 +257,55 @@ export const updateLessonProgress = async (req, res) => {
     const { courseId } = req.params;
     const { lessonId } = req.body;
 
+    // 1️⃣ Find the enrollment and populate the course to access its lessons
     const enrollment = await Enrollment.findOne({
       user: req.user._id,
       course: courseId,
-    });
+    }).populate("course");
 
-    if (!enrollment)
+    if (!enrollment) {
       return res.status(404).json({ success: false, message: "Not enrolled" });
-
-    if (!enrollment.completedLessons.includes(lessonId)) {
-      enrollment.completedLessons.push(lessonId);
-      await enrollment.save();
     }
 
-    res.status(200).json({ success: true, data: enrollment.completedLessons });
+    // 2️⃣ Add lesson to completed list if not already there
+    if (!enrollment.completedLessons.includes(lessonId)) {
+      enrollment.completedLessons.push(lessonId);
+    }
+
+    // 3️⃣ Calculate progress (completed / total lessons)
+    const totalLessons = enrollment.course?.lessons?.length || 0;
+    const completedLessons = enrollment.completedLessons.length;
+    console.log("Total Lessons:", totalLessons, "Completed Lessons:", completedLessons);
+
+    // Avoid division by zero
+    const progress =
+      totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+
+    enrollment.progress = progress;
+
+    // 4️⃣ Mark course as completed if all lessons done (optional)
+    if (completedLessons === totalLessons && totalLessons > 0) {
+      enrollment.completed = "completed"; // you can customize field name if needed
+    }
+
+    await enrollment.save();
+
+    // 5️⃣ Return the updated data
+    res.status(200).json({
+      success: true,
+      message: "Progress updated successfully",
+      data: {
+        completedLessons: enrollment.completedLessons,
+        progress: enrollment.progress,
+        status: enrollment.status,
+      },
+    });
   } catch (err) {
+    console.error("❌ updateLessonProgress error:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
 
 // ========================
 // Generate course completion certificate

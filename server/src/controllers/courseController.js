@@ -199,7 +199,7 @@ const getAllCourses = async (req, res) => {
 // Get single course (public)
 const getCourseById = async (req, res) => {
   try {
-    const course = await Course.findById(req.params.id)
+    const course = await Course.findById(req.params.courseId)
       .populate("instructor", "name email")
       .populate({
         path: "lessons",

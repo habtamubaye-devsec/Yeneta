@@ -8,9 +8,11 @@ import {
   webhookTest,
   enrollInCourse,
   getMyEnrollments,
+  getEnrollmentsLengthByCourse,
   getCourseProgress,
   updateLessonProgress,
   generateCertificate,
+  getEnrollmentsByCourse,
 } from "../controllers/enrollementControllers.js";
 
 const router = express.Router();
@@ -48,6 +50,18 @@ router.post("/enroll/:courseId", protect, enrollInCourse);
 // GET /api/enrollment/my
 // ========================
 router.get("/my", protect, getMyEnrollments);
+
+// ========================
+// Get all enrollments by course
+// GET /api/enrollment/courseId
+// ========================
+router.get("/course/:courseId", protect, getEnrollmentsByCourse);
+
+// ========================
+// Get length enrollments by course
+// GET /api/enrollment/courseId
+// ========================
+router.get("/length/:courseId", protect, getEnrollmentsLengthByCourse);
 
 // ========================
 // Get course progress

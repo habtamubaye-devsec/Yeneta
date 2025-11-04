@@ -12,9 +12,9 @@ const router = express.Router();
 
 // Public route
 router.get("/", getAllCategories);
+router.get("/:id", getCategoryById);
 
 // Admin-only routes
-router.get("/:id", protect,authorizeRoles("admin", "superAdmin"), getCategoryById);
 router.post("/", protect, authorizeRoles("admin", "superadmin"), createCategory);
 router.patch("/:id", protect, authorizeRoles("admin", "superadmin"), updateCategory);
 router.delete("/:id", protect, authorizeRoles("admin", "superadmin"), deleteCategory);

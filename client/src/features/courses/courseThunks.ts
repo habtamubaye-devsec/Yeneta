@@ -55,9 +55,9 @@ export const fetchCourses = createAsyncThunk(
 // ✅ Get Course by ID
 export const getCourseById = createAsyncThunk(
   "courses/getCourseById",
-  async (id: string, { rejectWithValue }) => {
+  async (courseId: string, { rejectWithValue }) => {
     try {
-      const { data } = await axios.get(`${API_URL}/${id}`);
+      const { data } = await axios.get(`${API_URL}/${courseId}`);
       // Normalize backend variations: some endpoints return { data: course } or { course } or course directly
       return data.data ?? data.course ?? data;
     } catch (error: any) {

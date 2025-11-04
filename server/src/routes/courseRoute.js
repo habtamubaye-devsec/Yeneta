@@ -19,7 +19,7 @@ router.get("/instructor-courses", protect, authorizeRoles("instructor"),getCours
 
 // Public
 router.get("/", getAllCourses);
-router.get("/:id", getCourseById);
+router.get("/:courseId", getCourseById);
 
 // Instructor only
 router.post("/", protect, upload.single("thumbnail"), authorizeRoles("instructor"), createCourse);
