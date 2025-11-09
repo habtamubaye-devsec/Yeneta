@@ -30,7 +30,8 @@ const userSchema = mongoose.Schema(
     },
     requestedToBeInstructor: {
       type: String,
-      enum: ["requested", "instructor", "rejected",],
+      enum: ["none", "requested", "approved"],
+      default: "none"
     },
     profileImage: {
       type: String, // URL to profile picture

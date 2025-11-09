@@ -21,7 +21,7 @@ import MyCourses from "./pages/student/MyCourses";
 import LessonPlayer from "./pages/student/LessonPlayer";
 import Certificates from "./pages/student/Certificates";
 // import Reviews from "./pages/student/Reviews";
-// import Profile from "./pages/student/Profile";
+import Profile from "./pages/student/Profile";
 
 // ✅ Instructor Pages
 import InstructorDashboard from "./pages/instructor/InstructorDashboard";
@@ -48,6 +48,7 @@ import CourseManagement from "./pages/admin/CourseManagement";
 import BrowseCourses from "./pages/courses/BrowseCourses";
 import CourseDetail from "./pages/courses/CourseDetail";
 import EnrollmentSuccess from "./pages/enrollment/Success";
+import ApproveInstructor from "./pages/admin/approve-instructor";
 
 // import NotFound from "./pages/NotFound";
 
@@ -147,14 +148,14 @@ const InnerApp = () => {
                   </ProtectedRoute>
                 }
               /> */}
-              {/* <Route
+              <Route
                 path="/student/profile"
                 element={
                   <ProtectedRoute allowedRoles={["student"]}>
                     <Profile />
                   </ProtectedRoute>
                 }
-              /> */}
+              />
 
               {/* Instructor */}
               <Route
@@ -205,6 +206,14 @@ const InnerApp = () => {
                   </ProtectedRoute>
                 }
               /> */}
+              <Route
+                path="/instructor/profile"
+                element={
+                  <ProtectedRoute allowedRoles={["instructor"]}>
+                    <Profile />
+                  </ProtectedRoute>
+                }
+              />
 
               {/* Admin */}
               <Route
@@ -220,6 +229,14 @@ const InnerApp = () => {
                 element={
                   <ProtectedRoute allowedRoles={["admin", "superadmin"]}>
                     <UserManagement />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/approve-instructor"
+                element={
+                  <ProtectedRoute allowedRoles={["admin", "superadmin"]}>
+                    <ApproveInstructor />
                   </ProtectedRoute>
                 }
               />

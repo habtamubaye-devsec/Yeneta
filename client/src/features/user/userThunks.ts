@@ -12,7 +12,6 @@ export const fetchUsers = createAsyncThunk(
       const response = await axios.get(API_URL, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }, withCredentials: true,
       });
-      console.log("Fetched users:", response.data);
 
       // ✅ Make sure to return the actual array
         return response.data.users || [];
@@ -34,7 +33,6 @@ export const banAndUnbanUser = createAsyncThunk(
         { status },
         { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }, withCredentials: true }
       );
-      console.log("Updated user response:", res.data);
       return res.data.data;
     } catch (err: any) {
       message.error(err.response?.data?.message || "Failed to update user status");
@@ -51,7 +49,6 @@ export const deleteUser = createAsyncThunk(
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         withCredentials: true,
       });
-      console.log("Deleted user response:", res.data);
       return userId;
     } catch (err: any) {
       message.error(err.response?.data?.message || "Failed to delete user");
@@ -59,3 +56,111 @@ export const deleteUser = createAsyncThunk(
     }
   }
 );  
+
+// Update password
+export const updateUserPassword = createAsyncThunk(
+  "user/updateUserPassword",
+  async (passwordData: { currentPassword: string; newPassword: string; confirmPassword: string }, { rejectWithValue }) => {
+    try {
+      const res = await axios.patch(`${API_URL}/current/password`, passwordData, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        withCredentials: true,
+      });
+      message.success("Password updated successfully!");
+      return res.data.data;
+    } catch (err: any) {
+      message.error(err.response?.data?.message || "Failed to update password");
+      return rejectWithValue(err.response?.data?.message || "Error updating password");
+    }
+  }
+);
+
+// ✅ Update profile info (name, bio, image)
+export const updateUserProfile = createAsyncThunk(
+  "user/updateUserProfile",
+  async (formData: FormData, { rejectWithValue }) => {
+    try {
+      const { data } = await axios.patch(`${API_URL}/current/updateProfile`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        withCredentials: true,
+      });
+      return data.user;
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data?.message || "Failed to update profile");
+    }
+  }
+);
+
+// 🧠 Toggle Instructor Request Thunk
+export const requestInstructor = createAsyncThunk(
+  "user/requestInstructor",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axios.patch(
+        `${API_URL}/request-instructor`,
+        {}, // no body needed
+        { withCredentials: true } // send cookies (auth)
+      );
+      return response.data.data; // backend returns { success, data: user }
+    } catch (err: any) {
+      return rejectWithValue(
+        err.response?.data?.message || "Failed to send instructor request"
+      );
+    }
+  }
+);
+
+// ✅ Fetch users who requested to be instructors
+export const fetchInstructorRequests = createAsyncThunk(
+  "user/fetchInstructorRequests",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(`${API_URL}/instructor-requests`, {
+        withCredentials: true,
+      });
+      return response.data.data; // ✅ matches your backend shape
+    } catch (err: any) {
+      return rejectWithValue(
+        err.response?.data?.message || "Failed to fetch instructor requests"
+      );
+    }
+  }
+);
+
+// ✅ Approve instructor request
+export const approveInstructor = createAsyncThunk(
+  "user/approveInstructor",
+  async (userId: string, { rejectWithValue }) => {
+    try {
+      const response = await axios.patch(
+        `${API_URL}/${userId}/approve-instructor`,
+        {},
+        { withCredentials: true }
+      );
+      return response.data.data;
+    } catch (err: any) {
+      return rejectWithValue(
+        err.response?.data?.message || "Failed to approve instructor"
+      );
+    }
+  }
+);
+
+// ❌ Reject instructor
+export const rejectInstructorRequest = createAsyncThunk(
+  "user/rejectInstructorRequest",
+  async (userId: string, { rejectWithValue }) => {
+    try {
+      const response = await axios.patch(
+        `${API_URL}/${userId}/reject-instructor`,
+        {},
+        { withCredentials: true }
+      );
+      return response.data.data;
+    } catch (err: any) {
+      return rejectWithValue(
+        err.response?.data?.message || "Failed to reject instructor request"
+      );
+    }
+  }
+);

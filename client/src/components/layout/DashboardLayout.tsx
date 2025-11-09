@@ -19,8 +19,9 @@ import {
   StarOutlined,
   FolderOpenOutlined,
   UserOutlined,
+  CheckCircleOutlined,
 } from "@ant-design/icons";
-import { GraduationCap } from "lucide-react";
+import { GraduationCap, Key } from "lucide-react";
 import GeminiChatbot from "@/components/chatbot/GeminiChatbot";
 import { logout } from "@/features/auth/authSlice";
 
@@ -89,6 +90,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
         return [
           ...baseItems,
           { key: "/admin/users", icon: <TeamOutlined />, label: "User Management" },
+          { key: "/admin/approve-instructor",icon: <CheckCircleOutlined />,label: "Approve Instructor"},
           { key: "/admin/courses", icon: <BookOutlined />, label: "Course Management" },
           { key: "/admin/reviews", icon: <StarOutlined />, label: "Review Moderation" },
           { key: "/admin/categories", icon: <FolderOpenOutlined />, label: "Categories" },
@@ -98,6 +100,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
         return [
           ...baseItems,
           { key: "/admin/users", icon: <TeamOutlined />, label: "User Management" },
+          { key: "/admin/approve-instructor",icon: <CheckCircleOutlined />,label: "Approve Instructor"},
           { key: "/admin/courses", icon: <BookOutlined />, label: "Course Management" },
           { key: "/admin/reviews", icon: <StarOutlined />, label: "Review Moderation" },
           { key: "/admin/categories", icon: <FolderOpenOutlined />, label: "Categories" },
@@ -116,7 +119,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
           key: "profile",
           icon: <UserOutlined />,
           label: "Profile",
-          onClick: () => navigate("/profile"),
+          onClick: () => navigate(`/${user.role}/profile`),
         },
         {
           key: "settings",
@@ -194,7 +197,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
           open={drawerVisible}
           onClose={() => setDrawerVisible(false)}
           closeIcon={false}
-          width={drawerWidth}
+          width={220}
           bodyStyle={{ background: drawerBg, padding: "10px" }}
           headerStyle={{ background: drawerBg }}
         >

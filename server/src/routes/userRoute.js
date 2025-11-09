@@ -4,25 +4,37 @@ import {
   getAllUsers,
   getCurrentUser,
   updateCurrentUser,
-  updateUserRole,
   updateUserStatus,
+  updateUserPassword,
   deleteUser,
   getUserById,
+  requestedToBeInstructor,
+  getInstructorRequests,
+  approveInstructor,
+  rejectInstructorRequest
 } from "../controllers/userController.js";
+import upload from "../middlewares/upload.js";
 
 const router = express.Router();
 
 // Admin only
 router.get("/", protect, authorizeRoles("admin", "superadmin"), getAllUsers);
-router.patch("/:id/role", protect, authorizeRoles("admin", "superadmin"), updateUserRole);
 router.delete("/:id", protect, authorizeRoles("admin", "superadmin"), deleteUser);
 router.patch("/:id/status", protect, authorizeRoles("admin", "superadmin"), updateUserStatus);
+router.get("/instructor-requests", protect, authorizeRoles("admin", "superadmin"), getInstructorRequests);
+router.patch("/:id/approve-instructor", protect, authorizeRoles("admin", "superadmin"), approveInstructor);
+router.patch("/:id/reject-instructor", protect, authorizeRoles("admin", "superadmin"), rejectInstructorRequest);
 
 // Current user
 router.get("/current", protect, getCurrentUser);
-router.patch("/current", protect, updateCurrentUser);
+router.patch("/current/updateProfile", protect, upload.single("profileImage"), updateCurrentUser);
+router.patch("/current/password", protect, updateUserPassword);
 
 // Get single user
 router.get("/:id", protect, getUserById);
+
+//student
+router.patch("/request-instructor", protect, authorizeRoles("student"), requestedToBeInstructor);
+
 
 export default router;

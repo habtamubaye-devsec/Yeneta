@@ -1,5 +1,15 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { fetchUsers, approveUser, banAndUnbanUser, deleteUser } from "./userThunks";
+import {
+  fetchUsers,
+  updateUserPassword,
+  banAndUnbanUser,
+  deleteUser,
+  updateUserProfile,
+  requestInstructor,
+  approveInstructor,
+  fetchInstructorRequests,
+  rejectInstructorRequest,
+} from "./userThunks";
 
 interface User {
   _id: string;
@@ -8,18 +18,26 @@ interface User {
   role: string;
   status: string;
   joinedDate?: string;
+  requestedToBeInstructor?: "none" | "requested" | "approved";
 }
 
 interface UserState {
   users: User[];
+  requests: User[]; // 👈 holds users who requested to be instructors
+  currentUser?: User | null;
   loading: boolean;
   error: string | null;
+  updating: boolean;
+  successMessage?: string;
 }
 
 const initialState: UserState = {
   users: [],
+  requests: [],
+  currentUser: null,
   loading: false,
   error: null,
+  updating: false,
 };
 
 const userSlice = createSlice({
@@ -27,7 +45,7 @@ const userSlice = createSlice({
   initialState,
   reducers: {},
   extraReducers: (builder) => {
-    // Fetch users
+    // 🟢 Fetch all users
     builder
       .addCase(fetchUsers.pending, (state) => {
         state.loading = true;
@@ -42,15 +60,7 @@ const userSlice = createSlice({
         state.error = action.payload as string;
       });
 
-    // // Approve user
-    // builder.addCase(approveUser.fulfilled, (state, action) => {
-    //   const updatedUser = action.payload;
-    //   state.users = state.users.map((user) =>
-    //     user._id === updatedUser._id ? updatedUser : user
-    //   );
-    // });
-
-    // Ban or Unban user
+    // 🚫 Ban or Unban user
     builder.addCase(banAndUnbanUser.fulfilled, (state, action) => {
       const updatedUser = action.payload;
       state.users = state.users.map((user) =>
@@ -58,10 +68,77 @@ const userSlice = createSlice({
       );
     });
 
-    // Delete user
+    // ❌ Delete user
     builder.addCase(deleteUser.fulfilled, (state, action) => {
       const userId = action.payload;
       state.users = state.users.filter((user) => user._id !== userId);
+    });
+
+    // 🔑 Update user password (no direct state update)
+    builder.addCase(updateUserPassword.fulfilled, (state) => {
+      state.successMessage = "Password updated successfully";
+    });
+
+    // 🧩 Update user profile
+    builder
+      .addCase(updateUserProfile.pending, (state) => {
+        state.updating = true;
+        state.error = null;
+      })
+      .addCase(updateUserProfile.fulfilled, (state, action) => {
+        state.updating = false;
+        state.successMessage = "Profile updated successfully!";
+        if (state.currentUser && action.payload) {
+          state.currentUser = { ...state.currentUser, ...action.payload };
+        }
+      })
+      .addCase(updateUserProfile.rejected, (state, action) => {
+        state.updating = false;
+        state.error = action.payload as string;
+      });
+
+    // 🧠 Request to become instructor (student action)
+    builder
+      .addCase(requestInstructor.pending, (state) => {
+        state.updating = true;
+        state.error = null;
+      })
+      .addCase(requestInstructor.fulfilled, (state, action) => {
+        state.updating = false;
+        state.successMessage = "Instructor request toggled successfully!";
+        state.currentUser = action.payload; // 👈 backend returns updated user
+      })
+      .addCase(requestInstructor.rejected, (state, action) => {
+        state.updating = false;
+        state.error = action.payload as string;
+      });
+
+    // 📋 Fetch instructor requests (admin)
+    builder
+      .addCase(fetchInstructorRequests.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchInstructorRequests.fulfilled, (state, action) => {
+        state.loading = false;
+        state.requests = action.payload; // 👈 store in requests list
+      })
+      .addCase(fetchInstructorRequests.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+
+    // ✅ Approve instructor (admin)
+    builder.addCase(approveInstructor.fulfilled, (state, action) => {
+      const approvedId = action.payload._id;
+      state.requests = state.requests.filter((u) => u._id !== approvedId);
+      state.successMessage = "Instructor approved successfully!";
+    });
+    // ❌ Reject instructor
+    builder.addCase(rejectInstructorRequest.fulfilled, (state, action) => {
+      const rejectedId = action.payload._id;
+      state.requests = state.requests.filter((u) => u._id !== rejectedId);
+      state.successMessage = "Instructor request rejected.";
     });
   },
 });

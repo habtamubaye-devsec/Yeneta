@@ -187,7 +187,7 @@ export default function UserManagement() {
             columns={columns}
             dataSource={filteredUsers}
             loading={loading}
-            pagination={{ pageSize: 5 }}
+            pagination={{ pageSize: 7 }}
             scroll={{ x: 1000, y: 400 }}
             bordered
           />
