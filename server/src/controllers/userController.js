@@ -1,14 +1,25 @@
 import User from "../models/userModel.js";
 
-// GET /api/users  (admin only)
+// GET /api/users (admin or super admin only)
 export const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find().select("-password"); // hide password
-    res.json({ success: true, data: users });
+    let query = {};
+
+    // If the requester is an admin, limit visible roles
+    if (req.user.role === "admin") {
+      query = { role: { $in: ["student", "instructor"] } };
+    }
+
+    // If the requester is a super admin, show everyone (including admins & super admins)
+    // No filter needed — query remains {}
+
+    const users = await User.find(query).select("-password");
+    res.json({ success: true,  users });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
 
 // GET /api/users/current
 export const getCurrentUser = async (req, res) => {
@@ -57,13 +68,37 @@ export const updateUserRole = async (req, res) => {
   }
 };
 
+//Update User Status (admin only)
+export const updateUserStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (!["active", "banned"].includes(status)) {
+      return res.status(400).json({ success: false, message: "Invalid status" });
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    user.status = status;
+    await user.save();
+
+    res.json({ success: true, data: user });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 // DELETE /api/users/:id  (admin only)
 export const deleteUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
-    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+    if (!user)
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
 
-    await user.remove();
+    await User.findByIdAndDelete(req.params.id);
+
     res.json({ success: true, message: "User deleted successfully" });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

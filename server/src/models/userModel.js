@@ -1,3 +1,4 @@
+import { request } from "express";
 import mongoose from "mongoose";
 
 const userSchema = mongoose.Schema(
@@ -26,6 +27,10 @@ const userSchema = mongoose.Schema(
       type: String,
       enum: ["active", "banned"],
       default: "active", // this is the field your updateUserStatus controller modifies
+    },
+    requestedToBeInstructor: {
+      type: String,
+      enum: ["requested", "instructor", "rejected",],
     },
     profileImage: {
       type: String, // URL to profile picture
