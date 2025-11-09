@@ -18,12 +18,12 @@ import { AppDispatch, RootState } from "@/redux/store";
 import {
   deleteCourse,
   updateCourse,
-  togglePublishCourse,
+  requestTogglePublish,
 } from "@/features/courses/courseThunks";
 import { message, Spin, Modal, Form, Input, Select, Upload, Image } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import { fetchCategories } from "@/features/categories/categoryThunks";
-import { fetchCoursesByInstructor } from "../../features/courses/courseThunks";
+import { fetchCoursesByInstructor } from "@/features/courses/courseThunks";
 
 const { Option } = Select;
 
@@ -62,7 +62,7 @@ export default function MyCourses() {
     setSelectedCourse(course);
     setSelectedCategory(course.category?._id || course.category);
     setPreview(course.thumbnailUrl || "");
-    setFile(null); // reset previously selected file
+    setFile(null);
 
     form.setFieldsValue({
       title: course.title,
@@ -90,7 +90,7 @@ export default function MyCourses() {
 
       Object.entries(values).forEach(([key, value]) => {
         if (Array.isArray(value)) {
-          value.forEach((v) => formData.append(`${key}[]`, v)); // <-- ensures array is sent
+          value.forEach((v) => formData.append(`${key}[]`, v));
         } else {
           formData.append(key, value as string);
         }
@@ -101,6 +101,7 @@ export default function MyCourses() {
       await dispatch(
         updateCourse({ id: selectedCourse._id, formData })
       ).unwrap();
+
       message.success("✅ Course updated successfully");
       setIsEditModalOpen(false);
       dispatch(fetchCoursesByInstructor());
@@ -109,21 +110,14 @@ export default function MyCourses() {
     }
   };
 
-  // Publish / Unpublish
+  // Publish / Unpublish / Request / Cancel
   const handleTogglePublish = async (course: any) => {
     try {
-      await dispatch(togglePublishCourse(course._id)).unwrap();
-      console.log(course.published);
-
-      message.success(
-        course.published
-          ? "Course unpublished successfully"
-          : "Course published successfully"
-      );
-
+      const result = await dispatch(requestTogglePublish(course._id)).unwrap();
+      message.success(result.message);
       dispatch(fetchCoursesByInstructor());
     } catch (error: any) {
-      message.error(error?.message || "Failed to change publish status");
+      message.error(error);
     }
   };
 
@@ -173,6 +167,7 @@ export default function MyCourses() {
                   alt={course.title}
                   className="w-full h-40 object-cover rounded"
                 />
+
                 <div className="flex-1 space-y-2">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <h3 className="font-bold text-lg line-clamp-2">
@@ -180,37 +175,53 @@ export default function MyCourses() {
                     </h3>
                   </div>
 
+                  {/* Status and Stats */}
                   <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
                     <Badge
-                      variant={course.published ? "default" : "secondary"}
+                      variant={
+                        course.status === "published"
+                          ? "default"
+                          : course.status === "pending"
+                          ? "secondary"
+                          : course.status === "rejected"
+                          ? "outline"
+                          : "outline"
+                      }
                       className="w-fit"
                     >
-                      {course.published ? (
-                        <p className=" text-green-400 text-sm">
-                          Published
-                        </p>
-                      ) : (
-                        <p className=" text-red-400">
-                          Unpublished
-                        </p>
+                      {course.status === "published" && (
+                        <p className="text-green-600">Published</p>
+                      )}
+                      {course.status === "pending" && (
+                        <p className="text-yellow-500">Pending Review</p>
+                      )}
+                      {course.status === "unpublished" && (
+                        <p className="text-red-500">Unpublished</p>
+                      )}
+                      {course.status === "rejected" && (
+                        <p className="text-red-700">Rejected</p>
                       )}
                     </Badge>
+
                     <span className="flex items-center gap-1">
-                      <BookOpen className="h-4 w-4" />{" "}
+                      <BookOpen className="h-4 w-4" />
                       {course.lessons?.length || 0} lessons
                     </span>
+
                     <span className="flex items-center gap-1">
-                      <Users className="h-4 w-4" />{" "}
+                      <Users className="h-4 w-4" />
                       {course.students?.length || 0} students
                     </span>
+
                     {course.status === "published" && (
                       <span className="flex items-center gap-1">
-                        <Star className="h-4 w-4 fill-warning text-warning" />{" "}
+                        <Star className="h-4 w-4 fill-warning text-warning" />
                         {course.rating || 0}
                       </span>
                     )}
                   </div>
 
+                  {/* Action Buttons */}
                   <div className="flex flex-wrap gap-2 pt-3">
                     <Button
                       variant="outline"
@@ -220,6 +231,7 @@ export default function MyCourses() {
                       <Edit className="h-4 w-4 mr-1" />
                       Edit
                     </Button>
+
                     <Link
                       to={`/instructor/courses/${course._id}`}
                       className="flex-1 min-w-[100px]"
@@ -228,16 +240,19 @@ export default function MyCourses() {
                         Manage Lessons
                       </Button>
                     </Link>
+
                     <Button
                       variant="outline"
                       className="flex-1 min-w-[100px]"
                       onClick={() => handleTogglePublish(course)}
                     >
                       <UploadCloud className="h-4 w-4 mr-1" />
-                      {course.published
-                        ? "Unpublish"
-                        : "Publish"}
+                      {course.status === "unpublished" && "Request Publish"}
+                      {course.status === "pending" && "Cancel Publish Request"}
+                      {course.status === "published" && "Unpublish"}
+                      {course.status === "rejected" && "Re-Submit"}
                     </Button>
+
                     <Button
                       variant="ghost"
                       size="icon"
@@ -257,7 +272,7 @@ export default function MyCourses() {
         </div>
       </div>
 
-      {/* Inline Edit Modal */}
+      {/* Edit Modal */}
       <Modal
         title="Edit Course"
         open={isEditModalOpen}
@@ -284,9 +299,7 @@ export default function MyCourses() {
             <Form.Item
               name="description"
               label="Course Description"
-              rules={[
-                { required: true, message: "Please enter course description" },
-              ]}
+              rules={[{ required: true, message: "Please enter course description" }]}
             >
               <Input.TextArea rows={3} placeholder="Enter course description" />
             </Form.Item>
@@ -308,14 +321,9 @@ export default function MyCourses() {
             <Form.Item
               name="subCategory"
               label="Subcategory"
-              rules={[
-                { required: true, message: "Please select a subcategory" },
-              ]}
+              rules={[{ required: true, message: "Please select a subcategory" }]}
             >
-              <Select
-                placeholder="Select subcategory"
-                disabled={!selectedCategory}
-              >
+              <Select placeholder="Select subcategory" disabled={!selectedCategory}>
                 {selectedCategoryObj?.subCategories?.length ? (
                   selectedCategoryObj.subCategories.map((sub) => (
                     <Option key={sub} value={sub}>
@@ -336,11 +344,7 @@ export default function MyCourses() {
                   <Image src={preview} width={120} height={80} />
                 </div>
               )}
-              <Upload
-                beforeUpload={handleBeforeUpload}
-                maxCount={1}
-                accept="image/*"
-              >
+              <Upload beforeUpload={handleBeforeUpload} maxCount={1} accept="image/*">
                 <Button icon={<UploadOutlined />}>Upload Thumbnail</Button>
               </Upload>
             </Form.Item>

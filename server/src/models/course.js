@@ -9,10 +9,11 @@ const CourseSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  level: { type: String, enum: ["beginner", "intermediate", "advanced"], default: "beginner" }, 
   price: { type: Number, default: 0 },
   thumbnailUrl: String,
   lessons: [{ type: mongoose.Schema.Types.ObjectId, ref: "Lesson" }],
-  published: { type: Boolean, default: false },
+  status: { type: String, default: "unpublished", enum: ["unpublished", "pending", "published", "rejected"] },
 }, { timestamps: true });
 
 // ✅ Fix OverwriteModelError

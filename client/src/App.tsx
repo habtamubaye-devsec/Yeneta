@@ -34,7 +34,7 @@ import ManageLessons from "./pages/instructor/ManageLesson";
 // // ✅ Admin Pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import UserManagement from "./pages/admin/UserManagement";
-// import CourseManagement from "./pages/admin/CourseManagement";
+import CourseManagement from "./pages/admin/CourseManagement";
 // import ReviewModeration from "./pages/admin/ReviewModeration";
 // import CategoryManagement from "./pages/admin/CategoryManagement";
 // import Notifications from "./pages/admin/Notifications";
@@ -223,7 +223,7 @@ const InnerApp = () => {
                   </ProtectedRoute>
                 }
               />
-              {/* <Route
+              <Route
                 path="/admin/courses"
                 element={
                   <ProtectedRoute allowedRoles={["admin", "superadmin"]}>
@@ -231,7 +231,7 @@ const InnerApp = () => {
                   </ProtectedRoute>
                 }
               />
-              <Route
+              {/* <Route
                 path="/admin/reviews"
                 element={
                   <ProtectedRoute allowedRoles={["admin", "superadmin"]}>

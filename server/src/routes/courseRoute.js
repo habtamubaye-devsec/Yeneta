@@ -4,10 +4,13 @@ import {
   updateCourse,
   deleteCourse,
   getAllCourses,
+  getAllCoursesForAdmin,
   getCourseById,
   getCoursesByInstructor,
   getStats,
-  togglePublishCourse,
+  requestTogglePublish,
+  approveCourse,
+  rejectCourse,
 } from "../controllers/courseController.js";
 import { protect, authorizeRoles } from "../middlewares/authMiddleware.js";
 import upload from "../middlewares/upload.js";
@@ -24,8 +27,16 @@ router.get("/:courseId", getCourseById);
 // Instructor only
 router.post("/", protect, upload.single("thumbnail"), authorizeRoles("instructor"), createCourse);
 router.put("/:id", protect, upload.single("thumbnail"), authorizeRoles("instructor"), updateCourse);
-router.patch("/:id/publish", protect,authorizeRoles("instructor"), togglePublishCourse);
-router.delete("/:id", protect, authorizeRoles("instructor"), deleteCourse);
+router.patch("/:id/publish", protect,authorizeRoles("instructor"), requestTogglePublish);
 router.get("/instructor/stats", protect, authorizeRoles("instructor"), getStats);
+
+//Admin only
+
+router.get("/admin/all-courses", protect, authorizeRoles("admin"), getAllCoursesForAdmin);
+router.patch("/:id/approve", protect, authorizeRoles("admin"), approveCourse);
+router.patch("/:id/reject", protect, authorizeRoles("admin"), rejectCourse);
+
+//for admin, superadmin, instructor
+router.delete("/:id", protect, authorizeRoles("instructor", "admin", "superadmin"), deleteCourse);
 
 export default router;

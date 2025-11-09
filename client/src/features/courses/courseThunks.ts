@@ -111,15 +111,16 @@ export const updateCourse = createAsyncThunk(
 );
 
 // 🔹 Toggle Publish Course
-export const togglePublishCourse = createAsyncThunk(
-  "courses/togglePublish",
-  async (courseId: string, thunkAPI) => {
+// 🔹 Toggle Publish / Unpublish / Request / Cancel
+export const requestTogglePublish = createAsyncThunk(
+  "courses/requestTogglePublish",
+  async (courseId: string, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token"); // or from Redux state if stored there
+      const token = localStorage.getItem("token");
 
       const res = await axios.patch(
         `${API_URL}/${courseId}/publish`,
-        {},
+        {}, // no body needed
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -127,15 +128,19 @@ export const togglePublishCourse = createAsyncThunk(
           withCredentials: true,
         }
       );
+      console.log("🎯 Toggle publish request sent");
+      console.log("🎯 Toggle publish response:", res.data);
 
-      return res.data.data;
+      // Return both message and updated course
+      return res.data;
     } catch (err: any) {
-      return thunkAPI.rejectWithValue(
-        err.response?.data?.message || "Error toggling publish"
-      );
+      const message =
+        err.response?.data?.message || "❌ Failed to update publish status";
+      return rejectWithValue(message);
     }
   }
 );
+
 
 // ✅ Delete Course
 export const deleteCourse = createAsyncThunk(
@@ -149,3 +154,99 @@ export const deleteCourse = createAsyncThunk(
     }
   }
 );
+
+
+// Fetch all courses
+export const getAllCoursesForAdmin = createAsyncThunk(
+  "courses/getAllCoursesForAdmin",
+  async (_, { rejectWithValue, getState }) => {
+    try {
+      // ✅ Get token from auth state or localStorage
+      const token =
+        (getState() as any)?.auth?.user?.token || localStorage.getItem("token");
+
+      if (!token) {
+        throw new Error("Unauthorized: No token found");
+      }
+
+      const res = await axios.get(`${API_URL}/admin/all-courses`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+      });
+
+      return res.data.data;
+    } catch (error: any) {
+      console.error("❌ getAllCoursesForAdmin error:", error);
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to fetch courses"
+      );
+    }
+  }
+);
+
+
+// Approve course
+export const approveCourse = createAsyncThunk(
+  "courses/approveCourse",
+  async (courseId: string, { rejectWithValue, getState }) => {
+    try {
+      const token =
+        (getState() as any)?.auth?.user?.token || localStorage.getItem("token");
+
+      if (!token) {
+        throw new Error("Unauthorized: No token found");
+      }
+
+      // ✅ Corrected placement of headers/config
+      const res = await axios.patch(
+        `${API_URL}/${courseId}/approve`,
+        {}, // empty body
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          withCredentials: true,
+        }
+      );
+
+      return res.data.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to approve course"
+      );
+    }
+  }
+);
+
+
+// Reject course
+export const rejectCourse = createAsyncThunk(
+  "courses/rejectCourse",
+  async (courseId: string, { rejectWithValue, getState }) => {
+    try {
+      const token =
+        (getState() as any)?.auth?.user?.token || localStorage.getItem("token");
+
+      if (!token) {
+        throw new Error("Unauthorized: No token found");
+      }
+
+      // ✅ Corrected placement of headers/config
+      const res = await axios.patch(`${API_URL}/${courseId}/reject`, {}, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+      });
+      console.log("🎯 Reject course response:", res.data) ;
+      return res.data.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || "Failed to reject course");
+    }
+  }
+);
+

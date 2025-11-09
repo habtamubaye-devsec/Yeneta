@@ -5,7 +5,8 @@ import {
   fetchCourses,
   getCourseById,
   updateCourse,
-  togglePublishCourse,
+  requestTogglePublish,
+  getAllCoursesForAdmin,
   deleteCourse,
   fetchCoursesByInstructor,
 } from "./courseThunks";
@@ -73,6 +74,17 @@ const courseSlice = createSlice({
         state.error = action.payload as string;
       });
 
+    // 🔹 Get All Courses for Admin
+    builder
+      .addCase(getAllCoursesForAdmin.fulfilled, (state, action) => {  
+        state.loading = false;
+        state.courses = action.payload;
+      })
+      .addCase(getAllCoursesForAdmin.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+
     // 🔹 Get Course by ID
     builder
       .addCase(getCourseById.fulfilled, (state, action) => {
@@ -108,10 +120,10 @@ const courseSlice = createSlice({
     
      // Toggle publish
     builder
-      .addCase(togglePublishCourse.pending, (state) => {
+      .addCase(requestTogglePublish.pending, (state) => {
         state.loading = true;
       })
-      .addCase(togglePublishCourse.fulfilled, (state, action) => {
+      .addCase(requestTogglePublish.fulfilled, (state, action) => {
         state.loading = false;
         const updated = action.payload;
         const index = state.courses.findIndex((c) => c._id === updated._id);
@@ -119,7 +131,7 @@ const courseSlice = createSlice({
           state.courses[index] = updated;
         }
       })
-      .addCase(togglePublishCourse.rejected, (state, action) => {
+      .addCase(requestTogglePublish.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

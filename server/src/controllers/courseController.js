@@ -119,43 +119,54 @@ const updateCourse = async (req, res) => {
 };
 
 // PATCH /api/courses/:id/publish
-const togglePublishCourse = async (req, res) => {
+// Instructor can request, cancel, or unpublish
+const requestTogglePublish = async (req, res) => {
   try {
     const { id } = req.params;
 
     const course = await Course.findOne({ _id: id, instructor: req.user._id });
     if (!course) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Course not found or not owned by you" });
+      return res.status(404).json({
+        success: false,
+        message: "Course not found or not owned by you",
+      });
     }
 
-    // 🔍 Count lessons for this course (accurate even if not populated)
-    const lessonCount = await Lesson.countDocuments({ course: course._id });
+    // Count lessons
+    const lessonCount = course.lessons.length;
+    console.log(`Course has ${lessonCount} lessons.`);
+    if (lessonCount < 5) {
+      return res.status(400).json({ success: false, message: "At least 5 lessons are required to publish the course" });
+    }
 
-    // 🟢 Publish if >= 2 lessons, otherwise prevent
-    if (!course.published) {
-      if (lessonCount < 2) {
-        return res.status(400).json({
-          success: false,
-          message: "You must have at least 2 lessons to publish this course",
-        });
-      }
-      course.published = true;
-      course.publishedAt = new Date();
-    } else {
-      // 🔴 Unpublish
-      course.published = false;
+    // 🧩 Logic based on status
+    if (course.status === "unpublished") {
+      // Request publish
+      
+      course.status = "pending";
+    } else if (course.status === "pending") {
+      // Cancel publish request
+      course.status = "unpublished";
+    } else if (course.status === "published") {
+      // Unpublish course
+      course.status = "unpublished";
       course.publishedAt = null;
+    }
+    else if (course.status === "rejected") {
+      // Re-submit for publishing
+      course.status = "pending";
     }
 
     await course.save();
 
     res.json({
       success: true,
-      message: course.published
-        ? "Course published successfully"
-        : "Course unpublished successfully",
+      message:
+        course.status === "pending"
+          ? "Publish request sent successfully"
+          : course.status === "unpublished"
+          ? "Publish request cancelled or course unpublished"
+          : "Course status updated",
       data: course,
     });
   } catch (err) {
@@ -164,31 +175,118 @@ const togglePublishCourse = async (req, res) => {
   }
 };
 
+// PATCH /api/courses/:id/approve
+const approveCourse = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const course = await Course.findById(id);
+    if (!course) {
+      return res.status(404).json({ success: false, message: "Course not found" });
+    }
+
+    if (course.status !== "pending") {
+      return res.status(400).json({
+        success: false,
+        message: "Only pending courses can be approved",
+      });
+    }
+
+    course.status = "published";
+    course.publishedAt = new Date();
+    await course.save();
+
+    res.json({
+      success: true,
+      message: "Course published successfully",
+      data: course,
+    });
+  } catch (err) {
+    console.error("Approve course error:", err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+//patch /api/courses/:id/reject
+const rejectCourse = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const course = await Course.findById(id);
+    if (!course) {
+      return res.status(404).json({ success: false, message: "Course not found" });
+    }
+
+    if (course.status !== "pending") {
+      return res.status(400).json({
+        success: false,
+        message: "Only pending courses can be rejected",
+      });
+    }
+
+    course.status = "rejected";
+    await course.save();
+
+    res.json({
+      success: true,
+      message: "Course rejected successfully",
+      data: course,
+    });
+  } catch (err) {
+    console.error("Reject course error:", err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
 
 // Delete course
 const deleteCourse = async (req, res) => {
   try {
-    const course = await Course.findOneAndDelete({
-      _id: req.params.id,
-      instructor: req.user._id,
-    });
+    const { id } = req.params;
 
+    // Find the course first
+    const course = await Course.findById(id);
     if (!course) {
-      return res.status(404).json({ success: false, message: "Course not found or not owned by you" });
+      return res.status(404).json({ success: false, message: "Course not found" });
     }
 
+    // Check role and ownership
+    const isOwner = course.instructor.toString() === req.user._id.toString();
+    const isAdmin = req.user.role === "admin" || req.user.role === "superadmin";
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ success: false, message: "Not authorized to delete this course" });
+    }
+
+    // Delete the course
+    await course.deleteOne();
+
     res.json({ success: true, message: "Course deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting course:", err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+
+// Get all courses (public)
+const getAllCourses = async (req, res) => {
+  try {
+    const courses = await Course.find({ status: "published" }) // ✅ only published courses
+      .populate("instructor", "name email") // show instructor info
+      .populate("category", "name") // show category name
+      .select("-lessons"); // exclude lessons for performance
+
+    res.json({ success: true, data: courses });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// Get all courses (public)
-const getAllCourses = async (req, res) => {
+// Get all courses for admin (private for admin adn super admin)
+const getAllCoursesForAdmin = async (req, res) => {
   try {
-    const courses = await Course.find()
-      .populate("instructor", "name email") // only show limited instructor fields
-      .select("-lessons"); // don’t return lessons list here for performance
+    const courses = await Course.find() // ✅ only published courses
+      .populate("instructor", "name email") // show instructor info
+      .populate("category", "name") // show category name
+      .populate("lessons", "title position videoDuration") // show lesson titles and durations
 
     res.json({ success: true, data: courses });
   } catch (err) {
@@ -282,9 +380,12 @@ const getStats = async (req, res) => {
 export {
   createCourse,
   updateCourse,
-  togglePublishCourse,
+  requestTogglePublish,
+  approveCourse,
+  rejectCourse,
   deleteCourse,
   getAllCourses,
+  getAllCoursesForAdmin,
   getCourseById,
   getCoursesByInstructor,
   getStats,
