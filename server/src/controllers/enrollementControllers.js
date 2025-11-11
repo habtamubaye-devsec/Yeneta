@@ -11,9 +11,11 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 export const createCheckoutSession = async (req, res) => {
   try {
     const { courseId } = req.params;
+    const userId = req.user._id;
     const course = await Course.findById(courseId);
     const enrollment = await Enrollment.findOne({
       course: courseId,
+      user: userId,
     });
 
     if (!course)
@@ -114,15 +116,22 @@ export const webhookTest = async (req, res) => {
     if (!userId || !courseId)
       return res.status(400).json({ success: false, message: "Missing metadata on session" });
 
+    const course = await Course.findById(courseId);
+    if (!course)
+      return res.status(404).json({ success: false, message: "Course not found" });
+    if (!course.instructor)
+      return res.status(400).json({
+        success: false,
+        message: "Course has no instructor assigned yet",
+      })
+
     const existing = await Enrollment.findOne({ user: userId, course: courseId });
     if (existing) return res.status(200).json({ success: true, message: "Already enrolled" });
-
-    const course = await Course.findById(courseId);
-    if (!course) return res.status(404).json({ success: false, message: "Course not found" });
-
+   
     const enrollment = await Enrollment.create({
       user: userId,
       course: courseId,
+      instructor: course.instructor, // ✅ add instructor from the course
       pricePaid: course.price,
       completedLessons: [],
     });
@@ -143,6 +152,17 @@ export const enrollInCourse = async (req, res) => {
   try {
     const { courseId } = req.params;
 
+    // Find the course
+    const course = await Course.findById(courseId);
+    if (!course)
+      return res.status(404).json({ success: false, message: "Course not found" });
+    if (!course.instructor)
+      return res.status(400).json({
+        success: false,
+        message: "Course has no instructor assigned yet",
+      })
+
+    // Check if already enrolled
     const existing = await Enrollment.findOne({
       user: req.user._id,
       course: courseId,
@@ -151,24 +171,24 @@ export const enrollInCourse = async (req, res) => {
     if (existing)
       return res.status(400).json({ success: false, message: "Already enrolled" });
 
-    const course = await Course.findById(courseId);
-    if (!course)
-      return res.status(404).json({ success: false, message: "Course not found" });
-
+    // Create new enrollment
     const enrollment = await Enrollment.create({
       user: req.user._id,
       course: courseId,
+      instructor: course.instructor, // ✅ add instructor from the course
       pricePaid: course.price,
-      currentLesson: course.lessons[0]._id,
+      currentLesson: course.lessons?.[0]?._id || null,
       progress: 0,
       completedLessons: [],
     });
 
     res.status(201).json({ success: true, data: enrollment });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
 
 // ========================
 // Get all enrollments for the logged-in user
@@ -302,44 +322,6 @@ export const updateLessonProgress = async (req, res) => {
     });
   } catch (err) {
     console.error("❌ updateLessonProgress error:", err);
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
-
-
-// ========================
-// Generate course completion certificate
-// GET /api/enroll/:courseId/certificate
-// ========================
-export const generateCertificate = async (req, res) => {
-  try {
-    const { courseId } = req.params;
-
-    const enrollment = await Enrollment.findOne({
-      user: req.user._id,
-      course: courseId,
-    }).populate("course user completedLessons");
-
-    if (!enrollment)
-      return res.status(404).json({ success: false, message: "Not enrolled" });
-
-    // Optional: check all lessons completed
-    if (enrollment.completedLessons.length < enrollment.course.lessons.length) {
-      return res.status(400).json({
-        success: false,
-        message: "Complete all lessons first",
-      });
-    }
-
-    const certificate = {
-      student: enrollment.user.name,
-      course: enrollment.course.title,
-      date: new Date(),
-      message: "Certificate of Completion",
-    };
-
-    res.status(200).json({ success: true, data: certificate });
-  } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };

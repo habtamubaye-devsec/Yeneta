@@ -16,6 +16,7 @@ import userRoutes from "./src/routes/userRoute.js";
 import courseRoute from "./src/routes/courseRoute.js";
 import lessonRoutes from "./src/routes/lessonRoutes.js";
 import enrollmentRoutes from "./src/routes/enrollementRoutes.js";
+import certificateRoutes from "./src/routes/certificateRoutes.js";
 import categoryRoutes from "./src/routes/categoryRoutes.js";
 import reviewRoutes from "./src/routes/reviewRoutes.js";
 import adminRoutes from "./src/routes/adminRoutes.js"
@@ -57,6 +58,7 @@ app.use("/api/user", userRoutes);
 app.use("/api/courses", courseRoute);
 app.use("/api/courses", lessonRoutes);
 app.use("/api/enrollment", enrollmentRoutes);
+app.use("/api/certificate", certificateRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/courses", reviewRoutes);
 app.use("/api/admin", adminRoutes);

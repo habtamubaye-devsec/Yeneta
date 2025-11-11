@@ -20,6 +20,7 @@ import StudentDashboard from "./pages/student/StudentDashboard";
 import MyCourses from "./pages/student/MyCourses";
 import LessonPlayer from "./pages/student/LessonPlayer";
 import Certificates from "./pages/student/Certificates";
+import ViewCertificate from "./pages/student/viewCertificate"
 // import Reviews from "./pages/student/Reviews";
 import Profile from "./pages/student/Profile";
 
@@ -36,13 +37,13 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import UserManagement from "./pages/admin/UserManagement";
 import CourseManagement from "./pages/admin/CourseManagement";
 // import ReviewModeration from "./pages/admin/ReviewModeration";
-// import CategoryManagement from "./pages/admin/CategoryManagement";
+import CategoryManagement from "./pages/admin/CategoryManagement";
 // import Notifications from "./pages/admin/Notifications";
 
-// // ✅ SuperAdmin Pages
-// import SuperAdminDashboard from "./pages/superadmin/SuperAdminDashboard";
-// import RoleManagement from "./pages/superadmin/RoleManagement";
-// import SystemSettings from "./pages/superadmin/SystemSettings";
+// ✅ SuperAdmin Pages
+import SuperAdminDashboard from "./pages/superadmin/SuperAdminDashboard";
+import RoleManagement from "./pages/superadmin/RoleManagement";
+import SystemSettings from "./pages/superadmin/SystemSettings";
 
 // // ✅ Course Pages
 import BrowseCourses from "./pages/courses/BrowseCourses";
@@ -137,6 +138,14 @@ const InnerApp = () => {
                 element={
                   <ProtectedRoute allowedRoles={["student"]}>
                     <Certificates />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/student/certificates/:userId/:courseId"
+                element={
+                  <ProtectedRoute allowedRoles={["student"]}>
+                    <ViewCertificate />
                   </ProtectedRoute>
                 }
               />
@@ -256,14 +265,14 @@ const InnerApp = () => {
                   </ProtectedRoute>
                 }
               /> */}
-              {/* <Route
+              <Route
                 path="/admin/categories"
                 element={
                   <ProtectedRoute allowedRoles={["admin", "superadmin"]}>
                     <CategoryManagement />
                   </ProtectedRoute>
                 }
-              /> */}
+              />
               {/* <Route
                 path="/admin/notifications"
                 element={
@@ -274,7 +283,7 @@ const InnerApp = () => {
               /> */}
 
               {/* SuperAdmin */}
-              {/* <Route
+              <Route
                 path="/superadmin"
                 element={
                   <ProtectedRoute allowedRoles={["superadmin"]}>
@@ -297,7 +306,7 @@ const InnerApp = () => {
                     <SystemSettings />
                   </ProtectedRoute>
                 }
-              /> */}
+              />
 
               {/* Catch-all */}
               {/* <Route path="*" element={<NotFound />} /> */}

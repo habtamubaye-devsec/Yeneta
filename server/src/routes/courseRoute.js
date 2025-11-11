@@ -32,9 +32,9 @@ router.get("/instructor/stats", protect, authorizeRoles("instructor"), getStats)
 
 //Admin only
 
-router.get("/admin/all-courses", protect, authorizeRoles("admin"), getAllCoursesForAdmin);
-router.patch("/:id/approve", protect, authorizeRoles("admin"), approveCourse);
-router.patch("/:id/reject", protect, authorizeRoles("admin"), rejectCourse);
+router.get("/admin/all-courses", protect, authorizeRoles("admin", "superadmin"), getAllCoursesForAdmin);
+router.patch("/:id/approve", protect, authorizeRoles("admin", "superadmin"), approveCourse);
+router.patch("/:id/reject", protect, authorizeRoles("admin", "superadmin"), rejectCourse);
 
 //for admin, superadmin, instructor
 router.delete("/:id", protect, authorizeRoles("instructor", "admin", "superadmin"), deleteCourse);

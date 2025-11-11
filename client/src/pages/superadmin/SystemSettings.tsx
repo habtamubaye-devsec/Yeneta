@@ -1,148 +1,191 @@
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { Settings, Save, Database, Download } from 'lucide-react';
-import { toast } from 'sonner';
+import {
+  Card,
+  Input,
+  Switch,
+  Button,
+  Form,
+  message,
+  Typography,
+  Space,
+  Divider,
+  List,
+} from 'antd';
+import {
+  SaveOutlined,
+  DatabaseOutlined,
+  DownloadOutlined,
+} from '@ant-design/icons';
+
+const { Title, Paragraph, Text } = Typography;
 
 export default function SystemSettings() {
+  const [form] = Form.useForm();
+
   const handleSave = () => {
-    toast.success('Settings saved successfully');
+    message.success('Settings saved successfully');
   };
 
   const handleBackup = () => {
-    toast.success('Backup initiated');
+    message.success('Backup initiated');
   };
 
   const handleRestore = () => {
-    toast.info('Restore functionality (simulated)');
+    message.info('Restore functionality (simulated)');
   };
+
+  const backups = [
+    { date: '2024-03-15 14:30', size: '245 MB' },
+    { date: '2024-03-14 14:30', size: '243 MB' },
+    { date: '2024-03-13 14:30', size: '240 MB' },
+  ];
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 max-w-3xl">
+      <div className="space-y-6 max-w-3xl mx-auto">
         <div>
-          <h1 className="text-3xl font-bold mb-2">System Settings</h1>
-          <p className="text-muted-foreground">Configure platform settings</p>
+          <Title level={2}>System Settings</Title>
+          <Text type="secondary">Configure platform settings</Text>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>General Settings</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="siteName">Site Name</Label>
-              <Input id="siteName" defaultValue="LearnHub" />
-            </div>
+        {/* General Settings */}
+        <Card title="General Settings" bordered>
+          <Form
+            layout="vertical"
+            form={form}
+            initialValues={{
+              siteName: 'LearnHub',
+              siteDescription: 'Learn new skills with expert-led online courses',
+              contactEmail: 'contact@learnhub.com',
+            }}
+            onFinish={handleSave}
+          >
+            <Form.Item
+              label="Site Name"
+              name="siteName"
+              rules={[{ required: true, message: 'Please enter site name' }]}
+            >
+              <Input placeholder="Enter site name" />
+            </Form.Item>
 
-            <div className="space-y-2">
-              <Label htmlFor="siteDescription">Site Description</Label>
-              <Textarea 
-                id="siteDescription" 
-                rows={3}
-                defaultValue="Learn new skills with expert-led online courses"
-              />
-            </div>
+            <Form.Item
+              label="Site Description"
+              name="siteDescription"
+              rules={[{ required: true, message: 'Please enter description' }]}
+            >
+              <Input.TextArea rows={3} placeholder="Enter site description" />
+            </Form.Item>
 
-            <div className="space-y-2">
-              <Label htmlFor="contactEmail">Contact Email</Label>
-              <Input id="contactEmail" type="email" defaultValue="contact@learnhub.com" />
-            </div>
+            <Form.Item
+              label="Contact Email"
+              name="contactEmail"
+              rules={[{ type: 'email', message: 'Please enter a valid email' }]}
+            >
+              <Input placeholder="contact@example.com" />
+            </Form.Item>
 
-            <Button onClick={handleSave}>
-              <Save className="h-4 w-4 mr-2" />
-              Save Settings
-            </Button>
-          </CardContent>
+            <Form.Item>
+              <Button type="primary" htmlType="submit" icon={<SaveOutlined />}>
+                Save Settings
+              </Button>
+            </Form.Item>
+          </Form>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Feature Toggles</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        {/* Feature Toggles */}
+        <Card title="Feature Toggles" bordered>
+          <Space direction="vertical" size="large" className="w-full">
             <div className="flex items-center justify-between">
               <div>
-                <Label>Course Reviews</Label>
-                <p className="text-sm text-muted-foreground">Allow students to review courses</p>
+                <Text strong>Course Reviews</Text>
+                <Paragraph type="secondary" style={{ marginBottom: 0 }}>
+                  Allow students to review courses
+                </Paragraph>
               </div>
               <Switch defaultChecked />
             </div>
 
             <div className="flex items-center justify-between">
               <div>
-                <Label>Discussion Forums</Label>
-                <p className="text-sm text-muted-foreground">Enable course discussion boards</p>
+                <Text strong>Discussion Forums</Text>
+                <Paragraph type="secondary" style={{ marginBottom: 0 }}>
+                  Enable course discussion boards
+                </Paragraph>
               </div>
               <Switch defaultChecked />
             </div>
 
             <div className="flex items-center justify-between">
               <div>
-                <Label>Certificates</Label>
-                <p className="text-sm text-muted-foreground">Issue certificates upon completion</p>
+                <Text strong>Certificates</Text>
+                <Paragraph type="secondary" style={{ marginBottom: 0 }}>
+                  Issue certificates upon completion
+                </Paragraph>
               </div>
               <Switch defaultChecked />
             </div>
 
             <div className="flex items-center justify-between">
               <div>
-                <Label>New User Registration</Label>
-                <p className="text-sm text-muted-foreground">Allow new users to register</p>
+                <Text strong>New User Registration</Text>
+                <Paragraph type="secondary" style={{ marginBottom: 0 }}>
+                  Allow new users to register
+                </Paragraph>
               </div>
               <Switch defaultChecked />
             </div>
-          </CardContent>
+          </Space>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Database className="h-5 w-5" />
+        {/* Backup & Restore */}
+        <Card
+          title={
+            <span className="flex items-center gap-2">
+              <DatabaseOutlined />
               Backup & Restore
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <p className="text-sm text-muted-foreground mb-4">
-                Create backups of your database and restore from previous backups
-              </p>
-              <div className="flex gap-3">
-                <Button onClick={handleBackup}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Create Backup
-                </Button>
-                <Button variant="outline" onClick={handleRestore}>
-                  Restore from Backup
-                </Button>
-              </div>
-            </div>
+            </span>
+          }
+          bordered
+        >
+          <Paragraph type="secondary">
+            Create backups of your database and restore from previous backups
+          </Paragraph>
 
-            <div className="border-t pt-4">
-              <h4 className="font-medium mb-3">Recent Backups</h4>
-              <div className="space-y-2">
-                {[
-                  { date: '2024-03-15 14:30', size: '245 MB' },
-                  { date: '2024-03-14 14:30', size: '243 MB' },
-                  { date: '2024-03-13 14:30', size: '240 MB' },
-                ].map((backup, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 border rounded">
-                    <div>
-                      <p className="font-medium text-sm">{backup.date}</p>
-                      <p className="text-xs text-muted-foreground">{backup.size}</p>
-                    </div>
-                    <Button variant="ghost" size="sm">
-                      <Download className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </CardContent>
+          <Space>
+            <Button
+              type="primary"
+              icon={<DownloadOutlined />}
+              onClick={handleBackup}
+            >
+              Create Backup
+            </Button>
+            <Button onClick={handleRestore}>Restore from Backup</Button>
+          </Space>
+
+          <Divider />
+
+          <Title level={5}>Recent Backups</Title>
+
+          <List
+            itemLayout="horizontal"
+            dataSource={backups}
+            renderItem={(backup) => (
+              <List.Item
+                actions={[
+                  <Button
+                    type="text"
+                    icon={<DownloadOutlined />}
+                    key="download"
+                  />,
+                ]}
+              >
+                <List.Item.Meta
+                  title={backup.date}
+                  description={<Text type="secondary">{backup.size}</Text>}
+                />
+              </List.Item>
+            )}
+          />
         </Card>
       </div>
     </DashboardLayout>

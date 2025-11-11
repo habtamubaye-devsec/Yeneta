@@ -1,12 +1,23 @@
 import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Edit, Trash2, FolderTree } from 'lucide-react';
-import { toast } from 'sonner';
+import {
+  Card,
+  Button,
+  Input,
+  Modal,
+  Typography,
+  List,
+  Space,
+  message,
+} from 'antd';
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  FolderOutlined,
+} from '@ant-design/icons';
+
+const { Title, Text } = Typography;
 
 export default function CategoryManagement() {
   const [categories, setCategories] = useState([
@@ -17,99 +28,174 @@ export default function CategoryManagement() {
     { id: 5, name: 'Business', courses: 27, slug: 'business' },
   ]);
 
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<any>(null);
+  const [newCategory, setNewCategory] = useState({ name: '', slug: '' });
+
+  const openAddModal = () => {
+    setNewCategory({ name: '', slug: '' });
+    setIsAddModalOpen(true);
+  };
+
+  const openEditModal = (category: any) => {
+    setSelectedCategory(category);
+    setIsEditModalOpen(true);
+  };
+
+  const handleAddCategory = () => {
+    if (!newCategory.name || !newCategory.slug) {
+      message.warning('Please fill all fields');
+      return;
+    }
+    setCategories([
+      ...categories,
+      {
+        id: categories.length + 1,
+        name: newCategory.name,
+        slug: newCategory.slug,
+        courses: 0,
+      },
+    ]);
+    setIsAddModalOpen(false);
+    message.success('Category added successfully');
+  };
+
+  const handleEditCategory = () => {
+    setCategories(
+      categories.map((c) =>
+        c.id === selectedCategory.id ? selectedCategory : c
+      )
+    );
+    setIsEditModalOpen(false);
+    message.success('Category updated successfully');
+  };
+
   const deleteCategory = (id: number) => {
-    setCategories(categories.filter(c => c.id !== id));
-    toast.success('Category deleted');
+    setCategories(categories.filter((c) => c.id !== id));
+    message.success('Category deleted');
   };
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 max-w-4xl">
-        <div className="flex items-center justify-between">
+      <div className="space-y-6 max-w-4xl mx-auto">
+        <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold mb-2">Category Management</h1>
-            <p className="text-muted-foreground">Organize courses into categories</p>
+            <Title level={2}>Category Management</Title>
+            <Text type="secondary">Organize courses into categories</Text>
           </div>
 
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Category
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add New Category</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 pt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Category Name</Label>
-                  <Input id="name" placeholder="e.g. Web Development" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="slug">Slug</Label>
-                  <Input id="slug" placeholder="e.g. web-development" />
-                </div>
-                <Button className="w-full">Create Category</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <Button type="primary" icon={<PlusOutlined />} onClick={openAddModal}>
+            Add Category
+          </Button>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>All Categories</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {categories.map((category) => (
-              <div 
-                key={category.id}
-                className="flex items-center gap-4 p-4 border rounded-lg hover:bg-accent transition-smooth"
-              >
-                <FolderTree className="h-5 w-5 text-primary" />
-                <div className="flex-1">
-                  <h4 className="font-medium">{category.name}</h4>
-                  <p className="text-sm text-muted-foreground">
-                    {category.courses} courses • {category.slug}
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Edit Category</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4 pt-4">
-                        <div className="space-y-2">
-                          <Label>Category Name</Label>
-                          <Input defaultValue={category.name} />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Slug</Label>
-                          <Input defaultValue={category.slug} />
-                        </div>
-                        <Button className="w-full">Save Changes</Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
+        <Card title="All Categories" bordered>
+          <List
+            dataSource={categories}
+            renderItem={(category) => (
+              <List.Item
+                actions={[
+                  <Button
+                    key="edit"
+                    icon={<EditOutlined />}
+                    type="text"
+                    onClick={() => openEditModal(category)}
+                  />,
+                  <Button
+                    key="delete"
+                    danger
+                    type="text"
+                    icon={<DeleteOutlined />}
                     onClick={() => deleteCategory(category.id)}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </CardContent>
+                  />,
+                ]}
+              >
+                <List.Item.Meta
+                  avatar={
+                    <FolderOutlined style={{ fontSize: 20, color: '#1677ff' }} />
+                  }
+                  title={<Text strong>{category.name}</Text>}
+                  description={
+                    <Text type="secondary">
+                      {category.courses} courses • {category.slug}
+                    </Text>
+                  }
+                />
+              </List.Item>
+            )}
+          />
         </Card>
+
+        {/* Add Category Modal */}
+        <Modal
+          title="Add New Category"
+          open={isAddModalOpen}
+          onCancel={() => setIsAddModalOpen(false)}
+          onOk={handleAddCategory}
+          okText="Create Category"
+        >
+          <Space direction="vertical" className="w-full" size="large">
+            <div>
+              <Text strong>Category Name</Text>
+              <Input
+                placeholder="e.g. Web Development"
+                value={newCategory.name}
+                onChange={(e) =>
+                  setNewCategory({ ...newCategory, name: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <Text strong>Slug</Text>
+              <Input
+                placeholder="e.g. web-development"
+                value={newCategory.slug}
+                onChange={(e) =>
+                  setNewCategory({ ...newCategory, slug: e.target.value })
+                }
+              />
+            </div>
+          </Space>
+        </Modal>
+
+        {/* Edit Category Modal */}
+        <Modal
+          title="Edit Category"
+          open={isEditModalOpen}
+          onCancel={() => setIsEditModalOpen(false)}
+          onOk={handleEditCategory}
+          okText="Save Changes"
+        >
+          {selectedCategory && (
+            <Space direction="vertical" className="w-full" size="large">
+              <div>
+                <Text strong>Category Name</Text>
+                <Input
+                  value={selectedCategory.name}
+                  onChange={(e) =>
+                    setSelectedCategory({
+                      ...selectedCategory,
+                      name: e.target.value,
+                    })
+                  }
+                />
+              </div>
+              <div>
+                <Text strong>Slug</Text>
+                <Input
+                  value={selectedCategory.slug}
+                  onChange={(e) =>
+                    setSelectedCategory({
+                      ...selectedCategory,
+                      slug: e.target.value,
+                    })
+                  }
+                />
+              </div>
+            </Space>
+          )}
+        </Modal>
       </div>
     </DashboardLayout>
   );

@@ -5,6 +5,7 @@ import courseReducer from "../features/courses/courseSlice";
 import categoryReducer from "../features/categories/categorySlice";
 import lessonReducer  from "../features/lesson/lessonSlice";
 import enrollmentReducer from "../features/enrollment/enrollmentSlice"; 
+import certificateReducer from "../features/certificate/certificateSlice";
 
 export const store = configureStore({
   reducer: {
@@ -14,6 +15,7 @@ export const store = configureStore({
     lessons: lessonReducer,
     categories: categoryReducer,
     enrollment: enrollmentReducer,
+    certificates: certificateReducer,
   },
 });
 

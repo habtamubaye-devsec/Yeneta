@@ -11,7 +11,6 @@ import {
   getEnrollmentsLengthByCourse,
   getCourseProgress,
   updateLessonProgress,
-  generateCertificate,
   getEnrollmentsByCourse,
 } from "../controllers/enrollementControllers.js";
 
@@ -74,11 +73,5 @@ router.get("/:courseId/progress", protect, getCourseProgress);
 // PATCH /api/enrollment/:courseId/progress
 // ========================
 router.patch("/:courseId/progress", protect, updateLessonProgress);
-
-// ========================
-// Generate course completion certificate
-// GET /api/enrollment/:courseId/certificate
-// ========================
-router.get("/:courseId/certificate", protect, generateCertificate);
 
 export default router;

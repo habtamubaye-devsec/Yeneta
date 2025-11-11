@@ -8,6 +8,11 @@ const EnrollmentSchema = new mongoose.Schema(
       ref: "Course",
       required: true,
     },
+    instructor: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
     pricePaid: { type: Number, default: 0 },
     status: { type: String, enum: ["active", "cancelled"], default: "active" },
     currentLesson: { type: mongoose.Schema.Types.ObjectId, ref: "Lesson" },

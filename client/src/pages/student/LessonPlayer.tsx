@@ -81,7 +81,7 @@ export default function LessonPlayer() {
     currentLessonIndex >= 0 ? lessons[currentLessonIndex] : lessons[0];
 
   const progress = lessons.length
-    ? Math.round((completedLessons.length / lessons.length) * 100)
+    ? Math.round((completedLessons.length / lessons.length) * 200)
     : 0;
 
   // Video playback handlers

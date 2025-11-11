@@ -33,6 +33,7 @@ export default function Login() {
       if (res.user.role === "student") navigate("/student");
       else if (res.user.role === "instructor") navigate("/instructor");
       else if (res.user.role === "admin") navigate("/admin");
+      else if (res.user.role === "superadmin") navigate("/superadmin"); 
     } catch (err: any) {
       message.error(err || "Invalid credentials");
     }
