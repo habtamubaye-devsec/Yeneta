@@ -1,5 +1,4 @@
-// src/pages/course/CourseDetail.tsx
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/app/store";
@@ -22,6 +21,7 @@ import {
   PlayCircleOutlined,
 } from "@ant-design/icons";
 import { DiscussionThread } from "@/components/discussion/DiscussionThread";
+import { CourseReview } from "../../components/review/reviewThread";
 import { getCourseById } from "@/features/courses/courseThunks";
 import {
   createCheckoutSession,
@@ -280,6 +280,11 @@ export default function CourseDetail() {
                   label: "Discussion",
                   children: <DiscussionThread courseId={course._id || id} />,
                 },
+                {
+                  key: 'review',
+                  label: "Review",
+                  children: <CourseReview courseId={course._id || id} />
+                }
               ]}
             />
           </div>

@@ -3,9 +3,10 @@ import authReducer from "../features/auth/authSlice";
 import userReducer from "../features/user/userSlice";
 import courseReducer from "../features/courses/courseSlice";
 import categoryReducer from "../features/categories/categorySlice";
-import lessonReducer  from "../features/lesson/lessonSlice";
-import enrollmentReducer from "../features/enrollment/enrollmentSlice"; 
+import lessonReducer from "../features/lesson/lessonSlice";
+import enrollmentReducer from "../features/enrollment/enrollmentSlice";
 import certificateReducer from "../features/certificate/certificateSlice";
+import reviewReducer from "../features/review/reviewSlice";
 
 export const store = configureStore({
   reducer: {
@@ -16,6 +17,7 @@ export const store = configureStore({
     categories: categoryReducer,
     enrollment: enrollmentReducer,
     certificates: certificateReducer,
+    reviews: reviewReducer,
   },
 });
 

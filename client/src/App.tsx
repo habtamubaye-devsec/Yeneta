@@ -21,7 +21,7 @@ import MyCourses from "./pages/student/MyCourses";
 import LessonPlayer from "./pages/student/LessonPlayer";
 import Certificates from "./pages/student/Certificates";
 import ViewCertificate from "./pages/student/viewCertificate"
-// import Reviews from "./pages/student/Reviews";
+import Reviews from "./pages/student/Reviews";
 import Profile from "./pages/student/Profile";
 
 // ✅ Instructor Pages
@@ -149,14 +149,14 @@ const InnerApp = () => {
                   </ProtectedRoute>
                 }
               />
-              {/* <Route
+              <Route
                 path="/student/reviews"
                 element={
                   <ProtectedRoute allowedRoles={["student"]}>
                     <Reviews />
                   </ProtectedRoute>
                 }
-              /> */}
+              />
               <Route
                 path="/student/profile"
                 element={
