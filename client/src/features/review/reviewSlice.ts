@@ -1,19 +1,24 @@
-// src/features/review/reviewSlice.ts
 import { createSlice } from "@reduxjs/toolkit";
 import {
   fetchCourseReviews,
   addReview,
-  fetchMyReview,
+  fetchMyReviews,
   fetchInstructorReviews,
+  fetchReviewSummaryForCourses,
   updateReview,
   deleteReview,
+  fetchReviewSummaryForSingleCourse,
+  fetchReviewForAdmin,
+  deleteReviewAdmin, // admin review delete
 } from "./reviewThunks";
 
 interface ReviewState {
   courseReviews: any[];
-  myReview: any | null;
+  myReviews: any[];
   instructorReviews: any[];
-
+  adminReviews: any[];
+  summary: any[];
+  singleCourseSummary: any | null;
   loading: boolean;
   error: string | null;
   success: boolean;
@@ -21,9 +26,11 @@ interface ReviewState {
 
 const initialState: ReviewState = {
   courseReviews: [],
-  myReview: null,
+  myReviews: [],
   instructorReviews: [],
-
+  adminReviews: [],
+  summary: [],
+  singleCourseSummary: null,
   loading: false,
   error: null,
   success: false,
@@ -41,10 +48,9 @@ const reviewSlice = createSlice({
 
   extraReducers: (builder) => {
     builder
-
-      // ===========================
+      // ============================================================
       // GET COURSE REVIEWS
-      // ===========================
+      // ============================================================
       .addCase(fetchCourseReviews.pending, (state) => {
         state.loading = true;
       })
@@ -52,17 +58,17 @@ const reviewSlice = createSlice({
         state.loading = false;
         state.courseReviews = Array.isArray(action.payload)
           ? action.payload
-          : []; // SAFE
+          : [];
       })
       .addCase(fetchCourseReviews.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
-        state.courseReviews = []; // PREVENT UNDEFINED
+        state.courseReviews = [];
       })
 
-      // ===========================
+      // ============================================================
       // ADD REVIEW
-      // ===========================
+      // ============================================================
       .addCase(addReview.pending, (state) => {
         state.loading = true;
       })
@@ -70,66 +76,103 @@ const reviewSlice = createSlice({
         state.loading = false;
         state.success = true;
 
-        if (!Array.isArray(state.courseReviews)) {
-          state.courseReviews = [];
-        }
-
         state.courseReviews.push(action.payload);
+        state.myReviews.push(action.payload);
       })
       .addCase(addReview.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       })
 
-      // ===========================
-      // GET MY REVIEW
-      // ===========================
-      .addCase(fetchMyReview.pending, (state) => {
+      // ============================================================
+      // GET MY REVIEWS
+      // ============================================================
+      .addCase(fetchMyReviews.pending, (state) => {
         state.loading = true;
       })
-      .addCase(fetchMyReview.fulfilled, (state, action) => {
+      .addCase(fetchMyReviews.fulfilled, (state, action) => {
         state.loading = false;
-        state.myReview = action.payload ?? null;
+        state.myReviews = Array.isArray(action.payload)
+          ? action.payload
+          : [];
       })
-      .addCase(fetchMyReview.rejected, (state, action) => {
+      .addCase(fetchMyReviews.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
-        state.myReview = null;
+        state.myReviews = [];
       })
 
-      // ===========================
+      // ============================================================
       // UPDATE REVIEW
-      // ===========================
+      // ============================================================
       .addCase(updateReview.fulfilled, (state, action) => {
         state.loading = false;
         state.success = true;
 
+        const updated = action.payload.data;
+
+        state.myReviews = state.myReviews.map((r) =>
+          r._id === updated._id ? updated : r
+        );
+
         state.courseReviews = state.courseReviews.map((r) =>
-          r.id === action.payload.id ? action.payload : r
+          r._id === updated._id ? updated : r
         );
       })
 
-      // ===========================
-      // DELETE REVIEW
-      // ===========================
+      // ============================================================
+      // DELETE REVIEW (User)
+      // ============================================================
       .addCase(deleteReview.fulfilled, (state, action) => {
         state.loading = false;
         state.success = true;
 
-        // Use _id instead of id
         state.courseReviews = state.courseReviews.filter(
           (r) => r._id !== action.payload
         );
 
-        // If myReview exists and matches, remove it too
-        if (state.myReview && state.myReview._id === action.payload) {
-          state.myReview = null;
-        }
+        state.myReviews = state.myReviews.filter(
+          (r) => r._id !== action.payload
+        );
       })
 
-      // ===========================
+      // ============================================================
+      // REVIEW SUMMARY FOR ALL COURSES
+      // ============================================================
+      .addCase(fetchReviewSummaryForCourses.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchReviewSummaryForCourses.fulfilled, (state, action) => {
+        state.loading = false;
+        state.summary = Array.isArray(action.payload)
+          ? action.payload
+          : [];
+      })
+      .addCase(fetchReviewSummaryForCourses.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+        state.summary = [];
+      })
+
+      // ============================================================
+      // REVIEW SUMMARY FOR SINGLE COURSE
+      // ============================================================
+      .addCase(fetchReviewSummaryForSingleCourse.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchReviewSummaryForSingleCourse.fulfilled, (state, action) => {
+        state.loading = false;
+        state.singleCourseSummary = action.payload;
+      })
+      .addCase(fetchReviewSummaryForSingleCourse.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+        state.singleCourseSummary = null;
+      })
+
+      // ============================================================
       // INSTRUCTOR REVIEWS
-      // ===========================
+      // ============================================================
       .addCase(fetchInstructorReviews.pending, (state) => {
         state.loading = true;
       })
@@ -143,6 +186,44 @@ const reviewSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
         state.instructorReviews = [];
+      })
+
+      // ============================================================
+      // ADMIN REVIEW MODERATION → Fetch reviews
+      // ============================================================
+      .addCase(fetchReviewForAdmin.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchReviewForAdmin.fulfilled, (state, action) => {
+        state.loading = false;
+        state.adminReviews = Array.isArray(action.payload)
+          ? action.payload
+          : [];
+      })
+      .addCase(fetchReviewForAdmin.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+        state.adminReviews = [];
+      })
+
+      // ============================================================
+      // ADMIN → DELETE REVIEW
+      // ============================================================
+      .addCase(deleteReviewAdmin.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(deleteReviewAdmin.fulfilled, (state, action) => {
+        state.loading = false;
+        state.success = true;
+
+        // Remove deleted item
+        state.adminReviews = state.adminReviews.filter(
+          (review) => review._id !== action.payload
+        );
+      })
+      .addCase(deleteReviewAdmin.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       });
   },
 });

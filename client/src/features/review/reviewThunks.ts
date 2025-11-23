@@ -14,7 +14,6 @@ export const fetchCourseReviews = createAsyncThunk(
       const res = await axios.get(`${API_BASE_URL}/${courseId}/reviews`, {
         withCredentials: true,
       });
-      console.log(res.data.data);
       return res.data.data;
     } catch (err: any) {
       return rejectWithValue(err.response?.data?.message || err.message);
@@ -49,53 +48,35 @@ export const addReview = createAsyncThunk(
 );
 
 //
-// 📌 3. Student → Get *their* own review
+// 📌 3. Student → Get *their* own reviews
 //
-export const fetchMyReview = createAsyncThunk(
-  "reviews/fetchMyReview",
+export const fetchMyReviews = createAsyncThunk(
+  "reviews/fetchMyReviews",
   async (_, { rejectWithValue }) => {
     try {
       const res = await axios.get(`${API_BASE_URL}/review/me`, {
         withCredentials: true,
       });
-      console.log(res.data.data);
-      return res.data.data || null;
+      return res.data.data; 
     } catch (err: any) {
-      console.log(err);
       return rejectWithValue(err.response?.data?.message || err.message);
     }
   }
 );
 
+//
+// 📌 4. Update review (student)
+//
 export const updateReview = createAsyncThunk(
   "reviews/updateReview",
   async ({ id, rating, comment }: any, thunkAPI) => {
     try {
-      const res = axios.get(`${API_BASE_URL}/review/delete`, {
-        rating,
-        comment,
-      });
-      return res.data;
-    } catch (err: any) {
-      return thunkAPI.rejectWithValue(err.response?.data?.message);
-    }
-  }
-);
-
-export const deleteReview = createAsyncThunk(
-  "reviews/deleteReview",
-  async (id: number, thunkAPI) => {
-    try {
-      const token = localStorage.getItem("token");
-
-      await axios.delete(`${API_BASE_URL}/review/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        withCredentials: true,
-      });
-
-      return id;
+      const res = await axios.patch(
+        `${API_BASE_URL}/review/${id}`,
+        { rating, comment },
+        { withCredentials: true }
+      );
+      return res.data.data;
     } catch (err: any) {
       return thunkAPI.rejectWithValue(err.response?.data?.message);
     }
@@ -103,7 +84,60 @@ export const deleteReview = createAsyncThunk(
 );
 
 //
-// 📌 4. Instructor → Get reviews for their courses
+// 📌 5. Delete review (student)
+//
+export const deleteReview = createAsyncThunk(
+  "reviews/deleteReview",
+  async (id: string, thunkAPI) => {
+    try {
+      const res = await axios.delete(`${API_BASE_URL}/review/${id}`, {
+        withCredentials: true,
+      });
+
+      return id; // returning deleted review id
+    } catch (err: any) {
+      return thunkAPI.rejectWithValue(err.response?.data?.message);
+    }
+  }
+);
+
+//
+// 📌 6. Get Review Summary for All Courses
+//
+export const fetchReviewSummaryForCourses = createAsyncThunk(
+  "reviews/fetchReviewSummaryForCourses",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/review/summary`, {
+        withCredentials: true,
+      });
+      return res.data.data;
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+);
+
+//
+// 📌 7. Get Review Summary for a Single Course
+//
+export const fetchReviewSummaryForSingleCourse = createAsyncThunk(
+  "reviews/fetchReviewSummaryForSingleCourse",
+  async (courseId: string, { rejectWithValue }) => {
+    try {
+      const res = await axios.get(
+        `${API_BASE_URL}/review/summary/${courseId}`,
+        { withCredentials: true }
+      );
+      return res.data.data;
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+);
+
+//
+// 📌 8. Instructor → Get Reviews for Their Courses
 //
 export const fetchInstructorReviews = createAsyncThunk(
   "reviews/fetchInstructorReviews",
@@ -115,6 +149,49 @@ export const fetchInstructorReviews = createAsyncThunk(
       return res.data.data;
     } catch (err: any) {
       return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+);
+
+//
+// 📌 9. Admin → Get ALL reviews
+//
+export const fetchReviewForAdmin = createAsyncThunk(
+  "reviews/fetchReviewForAdmin",
+  async (_, { rejectWithValue }) => { 
+    try { 
+      const res = await axios.get(
+        `${API_BASE_URL}/admin/review`,
+        { withCredentials: true }
+      );
+      console.log("Admin reviews fetched:", res.data.data);
+      return res.data.data;
+    } catch (err: any) {
+      return rejectWithValue(
+        err.response?.data?.message || err.message
+      );
+    }
+  }
+);
+
+//
+// 📌 10. Admin → Delete ANY review
+// ⭐ FIXED: unique action type
+//
+export const deleteReviewAdmin = createAsyncThunk(
+  "reviews/deleteReviewAdmin",
+  async (id: string, { rejectWithValue }) => {
+    try {
+      const res = await axios.delete(
+        `${API_BASE_URL}/admin/review/${id}`,
+        { withCredentials: true }
+      );
+
+      return id; // return deleted review ID
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to delete review"
+      );
     }
   }
 );

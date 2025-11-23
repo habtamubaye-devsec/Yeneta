@@ -1,135 +1,171 @@
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Star, MessageSquare } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { Tabs, Card, Avatar, Spin, Button } from "antd";
+import { fetchInstructorReviews, fetchReviewSummaryForCourses } from "../../features/review/reviewThunks";
+import type { RootState, AppDispatch } from "../../app/store";
+import { StarFilled } from "@ant-design/icons";
+
+// Custom fractional star component
+const FractionalRate = ({ value, max = 5, size = 14 }: { value: number; max?: number; size?: number }) => {
+  const stars = [];
+  for (let i = 1; i <= max; i++) {
+    let fillPercent = 0;
+    if (i <= Math.floor(value)) fillPercent = 100;
+    else if (i === Math.ceil(value)) fillPercent = (value % 1) * 100;
+    stars.push(
+      <span key={i} style={{ display: "inline-block", position: "relative", width: size, height: size, marginRight: 2 }}>
+        <StarFilled style={{ color: "#e6e6e6", fontSize: size }} />
+        <span
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: `${fillPercent}%`,
+            overflow: "hidden",
+            color: "#faad14",
+          }}
+        >
+          <StarFilled style={{ fontSize: size }} />
+        </span>
+      </span>
+    );
+  }
+  return <span>{stars}</span>;
+};
 
 export default function Feedback() {
-  const reviews = [
-    {
-      id: 1,
-      course: 'React Fundamentals',
-      student: 'John Doe',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=john',
-      rating: 5,
-      comment: 'Excellent course! Very clear explanations and practical examples. The instructor made complex topics easy to understand.',
-      date: '2024-03-15'
-    },
-    {
-      id: 2,
-      course: 'Advanced TypeScript',
-      student: 'Jane Smith',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=jane',
-      rating: 4,
-      comment: 'Great content overall. Would love to see more advanced examples in future updates.',
-      date: '2024-03-14'
-    },
-    {
-      id: 3,
-      course: 'React Fundamentals',
-      student: 'Mike Johnson',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=mike',
-      rating: 5,
-      comment: 'Best React course I\'ve taken! The projects are very practical and helped me land my dream job.',
-      date: '2024-03-13'
-    },
-  ];
+  const dispatch = useDispatch<AppDispatch>();
+  const { instructorReviews, summary: coursesSummary, loading } = useSelector(
+    (state: RootState) => state.reviews
+  );
 
-  const discussions = [
-    {
-      id: 1,
-      course: 'React Fundamentals',
-      student: 'Alice Brown',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=alice',
-      question: 'How do I properly handle async operations in useEffect?',
-      replies: 3,
-      date: '2 hours ago'
+  const [expandedCourse, setExpandedCourse] = useState<string | null>(null);
+
+  useEffect(() => {
+    dispatch(fetchInstructorReviews());
+    dispatch(fetchReviewSummaryForCourses());
+  }, [dispatch]);
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div style={{ textAlign: "center", marginTop: 50 }}>
+          <Spin size="large" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Group reviews by course
+  const groupedByCourse: Record<string, any[]> = instructorReviews.reduce(
+    (acc: any, review: any) => {
+      const courseId = review.course?._id;
+      if (!acc[courseId]) acc[courseId] = [];
+      acc[courseId].push(review);
+      return acc;
     },
-    {
-      id: 2,
-      course: 'Advanced TypeScript',
-      student: 'Bob Wilson',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=bob',
-      question: 'Can you explain the difference between type and interface?',
-      replies: 5,
-      date: '5 hours ago'
-    },
-  ];
+    {}
+  );
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
         <div>
-          <h1 className="text-3xl font-bold mb-2">Student Feedback</h1>
-          <p className="text-muted-foreground">Reviews and discussions from your students</p>
+          <h1 style={{ fontSize: 28, fontWeight: "bold" }}>Student Feedback</h1>
+          <p style={{ color: "#666" }}>Reviews from your students</p>
         </div>
 
-        <Tabs defaultValue="reviews">
-          <TabsList>
-            <TabsTrigger value="reviews">Reviews</TabsTrigger>
-            <TabsTrigger value="discussions">Discussions</TabsTrigger>
-          </TabsList>
+        <Tabs defaultActiveKey="reviews">
+          <Tabs.TabPane tab="Reviews" key="reviews">
+            <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 20 }}>
+              {coursesSummary.map((course) => {
+                const allReviews = groupedByCourse[course.courseId] || [];
+                const showAll = expandedCourse === course.courseId;
+                const displayedReviews = showAll ? allReviews : allReviews.slice(0, 2);
 
-          <TabsContent value="reviews" className="space-y-4 mt-6">
-            {reviews.map((review) => (
-              <Card key={review.id}>
-                <CardContent className="pt-6">
-                  <div className="flex gap-4">
-                    <Avatar>
-                      <AvatarImage src={review.avatar} />
-                      <AvatarFallback>{review.student[0]}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-2">
-                        <div>
-                          <h4 className="font-semibold">{review.student}</h4>
-                          <p className="text-sm text-muted-foreground">{review.course}</p>
+                return (
+                  <Card key={course.courseId} style={{ borderRadius: 10 }}>
+                    {/* Course thumbnail and summary */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 15, marginBottom: 10 }}>
+                      <img
+                        src={course.thumbnailUrl}
+                        alt={course.title}
+                        style={{ width: 80, height: 80, borderRadius: 8, objectFit: "cover" }}
+                      />
+                      <div style={{ flex: 1 }}>
+                        <h3 style={{ margin: 0 }}>{course.title}</h3>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+                          <FractionalRate value={course.averageRating} size={14} />
+                          <span style={{ fontSize: 12, color: "#555" }}>
+                            {course.averageRating.toFixed(1)} ({course.reviewCount} {course.reviewCount === 1 ? "review" : "reviews"})
+                          </span>
                         </div>
-                        <div className="text-right">
-                          <div className="flex items-center gap-1 mb-1">
-                            {Array.from({ length: review.rating }).map((_, i) => (
-                              <Star key={i} className="h-4 w-4 fill-warning text-warning" />
-                            ))}
-                          </div>
-                          <span className="text-sm text-muted-foreground">{review.date}</span>
-                        </div>
-                      </div>
-                      <p className="text-muted-foreground">{review.comment}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </TabsContent>
-
-          <TabsContent value="discussions" className="space-y-4 mt-6">
-            {discussions.map((discussion) => (
-              <Card key={discussion.id} className="hover:shadow-lg transition-smooth cursor-pointer">
-                <CardContent className="pt-6">
-                  <div className="flex gap-4">
-                    <Avatar>
-                      <AvatarImage src={discussion.avatar} />
-                      <AvatarFallback>{discussion.student[0]}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-2">
-                        <div>
-                          <h4 className="font-semibold">{discussion.student}</h4>
-                          <p className="text-sm text-muted-foreground">{discussion.course}</p>
-                        </div>
-                        <span className="text-sm text-muted-foreground">{discussion.date}</span>
-                      </div>
-                      <p className="font-medium mb-2">{discussion.question}</p>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <MessageSquare className="h-4 w-4" />
-                        <span>{discussion.replies} replies</span>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </TabsContent>
+
+                    {/* Reviews */}
+                    {displayedReviews.length > 0 && (
+                      <div
+                        style={{
+                          maxHeight: showAll ? 300 : "auto",
+                          overflowY: showAll ? "scroll" : "visible",
+                          paddingRight: showAll ? 10 : 0,
+                        }}
+                      >
+                        {displayedReviews.map((review) => (
+                          <Card key={review._id} style={{ marginBottom: 15, borderRadius: 8 }}>
+                            <div style={{ display: "flex", gap: 15 }}>
+                              <Avatar size={45} src={review.user?.profileImage}>
+                                {review.user?.name?.charAt(0)}
+                              </Avatar>
+                              <div style={{ flex: 1 }}>
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    marginBottom: 6,
+                                  }}
+                                >
+                                  <div>
+                                    <h4 style={{ margin: 0 }}>{review.user?.name}</h4>
+                                  </div>
+                                  <div style={{ textAlign: "right" }}>
+                                    <FractionalRate value={review.rating} size={12} />
+                                    <span style={{ fontSize: 10, color: "#888", marginLeft: 4 }}>
+                                      {review.rating.toFixed(1)}
+                                    </span>
+                                    <br />
+                                    <small style={{ color: "#888" }}>
+                                      {new Date(review.createdAt).toLocaleDateString()}
+                                    </small>
+                                  </div>
+                                </div>
+                                <p style={{ color: "#555", marginTop: 5 }}>{review.comment}</p>
+                              </div>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+
+                    {allReviews.length > 2 && (
+                      <div style={{ textAlign: "center", marginTop: 8 }}>
+                        <Button
+                          type="link"
+                          onClick={() =>
+                            setExpandedCourse(showAll ? null : course.courseId)
+                          }
+                        >
+                          {showAll ? "Show Less" : `Show More (${allReviews.length - 2})`}
+                        </Button>
+                      </div>
+                    )}
+                  </Card>
+                );
+              })}
+            </div>
+          </Tabs.TabPane>
         </Tabs>
       </div>
     </DashboardLayout>

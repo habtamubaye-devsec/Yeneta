@@ -2,37 +2,70 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "@/app/store";
 import { fetchCourses } from "@/features/courses/courseThunks";
+import { fetchReviewSummaryForCourses } from "@/features/review/reviewThunks";
+import { fetchCategories } from "@/features/categories/categoryThunks";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Card, Input, Select, Typography, Spin, Alert } from "antd";
+import { Card, Input, Select, Typography, Spin, Alert, Slider, Row, Col } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
-import { CourseCard } from "../../components/course/CourseCard";
+import { CourseCard } from "@/components/course/CourseCard";
 
 const { Title, Text } = Typography;
 
 export default function BrowseCourses() {
   const dispatch = useDispatch<AppDispatch>();
-  const { courses, loading, error } = useSelector((state: RootState) => state.courses);
 
+  // Redux state
+  const { courses, loading: coursesLoading, error } = useSelector((state: RootState) => state.courses);
+  const { summary: coursesSummary, loading: summaryLoading } = useSelector((state: RootState) => state.reviews);
+  const { categories, loading: categoriesLoading } = useSelector((state: RootState) => state.categories);
+
+  // Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [levelFilter, setLevelFilter] = useState("all");
-  const [priceFilter, setPriceFilter] = useState("all");
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
 
-  // Fetch courses on mount or when filters change
+  // Fetch courses, review summary, and categories
   useEffect(() => {
-    const filters: any = {};
+    dispatch(fetchCourses());
+    dispatch(fetchReviewSummaryForCourses());
+    dispatch(fetchCategories());
+  }, [dispatch]);
 
-    if (searchQuery) filters.search = searchQuery;
-    if (categoryFilter !== "all") filters.category = categoryFilter;
-    if (levelFilter !== "all") filters.level = levelFilter;
-    if (priceFilter === "free") {
-      filters.maxPrice = 0;
-    } else if (priceFilter === "paid") {
-      filters.minPrice = 0.01;
-    }
+  // Map courseId to review summary for quick lookup
+  const reviewMap: Record<string, { averageRating: number; reviewCount: number }> = {};
+  coursesSummary.forEach((summary) => {
+    reviewMap[summary.courseId] = { averageRating: summary.averageRating, reviewCount: summary.reviewCount };
+  });
 
-    dispatch(fetchCourses(filters));
-  }, [dispatch, searchQuery, categoryFilter, levelFilter, priceFilter]);
+  const loading = coursesLoading || summaryLoading || categoriesLoading;
+
+  // Filtered & normalized courses
+  const filteredCourses = courses
+    .filter((course) => {
+      // Search
+      const term = searchQuery.toLowerCase();
+      if (term && !course.title.toLowerCase().includes(term) && !course.instructor?.name?.toLowerCase().includes(term)) {
+        return false;
+      }
+
+      // Category
+      if (categoryFilter !== "all") {
+        const courseCategory = (course.category?.name || course.category || "").toLowerCase();
+        if (courseCategory !== categoryFilter.toLowerCase()) return false;
+      }
+
+      // Level
+      if (levelFilter !== "all") {
+        const courseLevel = (course.level || "beginner").toLowerCase();
+        if (courseLevel !== levelFilter.toLowerCase()) return false;
+      }
+
+      // Price
+      if (course.price < priceRange[0] || course.price > priceRange[1]) return false;
+
+      return true;
+    });
 
   return (
     <DashboardLayout>
@@ -44,48 +77,60 @@ export default function BrowseCourses() {
 
         {/* Filters */}
         <Card>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Input
-              placeholder="Search courses..."
-              prefix={<SearchOutlined />}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              size="large"
-            />
-            <Select
-              value={categoryFilter}
-              onChange={setCategoryFilter}
-              size="large"
-              style={{ width: "100%" }}
-            >
-              <Select.Option value="all">All Categories</Select.Option>
-              <Select.Option value="Web Development">Web Development</Select.Option>
-              <Select.Option value="Mobile Development">Mobile Development</Select.Option>
-              <Select.Option value="Design">Design</Select.Option>
-              <Select.Option value="Data Science">Data Science</Select.Option>
-            </Select>
-            <Select
-              value={levelFilter}
-              onChange={setLevelFilter}
-              size="large"
-              style={{ width: "100%" }}
-            >
-              <Select.Option value="all">All Levels</Select.Option>
-              <Select.Option value="Beginner">Beginner</Select.Option>
-              <Select.Option value="Intermediate">Intermediate</Select.Option>
-              <Select.Option value="Advanced">Advanced</Select.Option>
-            </Select>
-            <Select
-              value={priceFilter}
-              onChange={setPriceFilter}
-              size="large"
-              style={{ width: "100%" }}
-            >
-              <Select.Option value="all">All Prices</Select.Option>
-              <Select.Option value="free">Free</Select.Option>
-              <Select.Option value="paid">Paid</Select.Option>
-            </Select>
-          </div>
+          <Row gutter={[16, 16]}>
+            <Col xs={24} sm={12} md={6}>
+              <Input
+                placeholder="Search courses..."
+                prefix={<SearchOutlined />}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                size="large"
+              />
+            </Col>
+            <Col xs={24} sm={12} md={6}>
+              <Select
+                value={categoryFilter}
+                onChange={setCategoryFilter}
+                size="large"
+                style={{ width: "100%" }}
+              >
+                <Select.Option value="all">All Categories</Select.Option>
+                {categories.map((cat) => (
+                  <Select.Option key={cat._id} value={cat.name.toLowerCase()}>
+                    {cat.name}
+                  </Select.Option>
+                ))}
+              </Select>
+            </Col>
+            <Col xs={24} sm={12} md={6}>
+              <Select
+                value={levelFilter}
+                onChange={setLevelFilter}
+                size="large"
+                style={{ width: "100%" }}
+              >
+                <Select.Option value="all">All Levels</Select.Option>
+                <Select.Option value="beginner">Beginner</Select.Option>
+                <Select.Option value="intermediate">Intermediate</Select.Option>
+                <Select.Option value="advanced">Advanced</Select.Option>
+              </Select>
+            </Col>
+            <Col xs={24} sm={12} md={6}>
+              <div>
+                <Text type="secondary" className="mb-1">
+                  Price: ${priceRange[0]}–${priceRange[1]}
+                </Text>
+                <Slider
+                  range
+                  min={0}
+                  max={1000}
+                  step={10}
+                  value={priceRange}
+                  onChange={(val) => setPriceRange(val as [number, number])}
+                />
+              </div>
+            </Col>
+          </Row>
         </Card>
 
         {/* Loading & Error */}
@@ -94,22 +139,25 @@ export default function BrowseCourses() {
 
         {/* Course Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {courses.length > 0 ? (
-            courses.map((course: any) => (
-              <CourseCard
-                key={course._id || course.id}
-                id={course._id || course.id}
-                title={course.title}
-                instructor={course.instructor?.name || course.instructor || course.author || "Unknown"}
-                thumbnail={course.thumbnailUrl || course.thumbnail || "/placeholder.png"}
-                rating={course.rating || 0}
-                students={course.students?.length ?? course.enrolledCount ?? 0}
-                duration={course.duration || "0h"}
-                price={course.price ?? 0}
-                level={course.level || "Beginner"}
-                category={course.category?.name || course.category || "General"}
-              />
-            ))
+          {filteredCourses.length > 0 ? (
+            filteredCourses.map((course) => {
+              const summary = reviewMap[course._id || course.id] || { averageRating: 0, reviewCount: 0 };
+              return (
+                <CourseCard
+                  key={course._id || course.id}
+                  id={course._id || course.id}
+                  title={course.title}
+                  instructor={course.instructor?.name || course.instructor || course.author || "Unknown"}
+                  thumbnail={course.thumbnailUrl || course.thumbnail || "/placeholder.png"}
+                  rating={summary.averageRating}
+                  students={course.students?.length ?? course.enrolledCount ?? 0}
+                  duration={course.duration || "0h"}
+                  price={course.price ?? 0}
+                  level={course.level || "Beginner"}
+                  category={course.category?.name || course.category || "General"}
+                />
+              );
+            })
           ) : (
             !loading && <Text>No courses found.</Text>
           )}

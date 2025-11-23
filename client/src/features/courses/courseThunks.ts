@@ -155,7 +155,6 @@ export const deleteCourse = createAsyncThunk(
   }
 );
 
-
 // Fetch all courses
 export const getAllCoursesForAdmin = createAsyncThunk(
   "courses/getAllCoursesForAdmin",
@@ -187,7 +186,6 @@ export const getAllCoursesForAdmin = createAsyncThunk(
     }
   }
 );
-
 
 // Approve course
 export const approveCourse = createAsyncThunk(
@@ -222,7 +220,6 @@ export const approveCourse = createAsyncThunk(
   }
 );
 
-
 // Reject course
 export const rejectCourse = createAsyncThunk(
   "courses/rejectCourse",
@@ -249,4 +246,3 @@ export const rejectCourse = createAsyncThunk(
     }
   }
 );
-

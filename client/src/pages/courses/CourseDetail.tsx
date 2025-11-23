@@ -21,7 +21,7 @@ import {
   PlayCircleOutlined,
 } from "@ant-design/icons";
 import { DiscussionThread } from "@/components/discussion/DiscussionThread";
-import { CourseReview } from "../../components/review/reviewThread";
+import { CourseReview } from "@/components/review/reviewThread";
 import { getCourseById } from "@/features/courses/courseThunks";
 import {
   createCheckoutSession,
@@ -29,6 +29,7 @@ import {
   fetchEnrollmentByCourse,
   getEnrollmentsLengthByCourse,
 } from "@/features/enrollment/enrollmentThunks";
+import { fetchReviewSummaryForSingleCourse } from "../../features/review/reviewThunks";
 import { fetchCategoryById } from "@/features/categories/categoryThunks";
 
 const { Title, Text, Paragraph } = Typography;
@@ -47,39 +48,41 @@ export default function CourseDetail() {
   const { selectedCategory: category } = useSelector(
     (state: RootState) => state.categories
   );
-  const { currentEnrollment, enrollmentsCount, enrollments } = useSelector(
-    (state: RootState) => state.enrollment
+  const { singleCourseSummary: coursesSummary} = useSelector(
+    (state: RootState) => state.reviews
   );
 
-  // Single enrollment for this course
+  const { currentEnrollment, enrollmentsCount } = useSelector(
+    (state: RootState) => state.enrollment
+  );
   const myEnrollment = currentEnrollment;
-  const progress =  myEnrollment?.progress || 0;
+  const progress = myEnrollment?.progress ?? 0;
 
-  // Fetch course and related data
+  const lessons = Array.isArray(course?.lessons) ? course.lessons : [];
+
+  // Fetch course
   useEffect(() => {
     if (id) dispatch(getCourseById(id));
   }, [dispatch, id]);
 
-  // Fetch category once course is loaded
+  // Fetch category after course loads
   useEffect(() => {
-    const categoryId = course?.category;
-    if (categoryId) {
-      dispatch(fetchCategoryById(categoryId));
-    }
+    if (course?.category) dispatch(fetchCategoryById(course.category));
   }, [dispatch, course?.category]);
 
-  // Fetch enrollment and total students
+  // Fetch enrollment & total students
   useEffect(() => {
     const courseId = course?._id;
     if (courseId) {
       dispatch(fetchEnrollmentByCourse(courseId));
       dispatch(getEnrollmentsLengthByCourse(courseId));
+      
+    dispatch(fetchReviewSummaryForSingleCourse(courseId));
     }
   }, [dispatch, course?._id]);
 
-  const lessons = Array.isArray(course?.lessons) ? course.lessons : [];
-
   const handleBuy = async () => {
+    if (!course) return;
     try {
       // Free course -> enroll directly
       if (!course.price || Number(course.price) === 0) {
@@ -87,12 +90,10 @@ export default function CourseDetail() {
         message.success("Enrolled successfully");
         return;
       }
-
-      // Paid course -> redirect to Stripe checkout
+      // Paid course -> Stripe checkout
       const url = await dispatch(createCheckoutSession(course._id)).unwrap();
       if (url) window.location.href = url;
     } catch (err: any) {
-      console.error("Checkout/enroll error", err);
       message.error(err?.message || "Payment failed");
     }
   };
@@ -140,7 +141,7 @@ export default function CourseDetail() {
           <div className="absolute inset-0 bg-gradient-to-t from-background/95 to-background/20" />
           <div className="absolute bottom-0 left-0 right-0 p-8">
             <Badge
-              count={category?.name}
+              count={category?.name ?? ""}
               style={{ background: "hsl(221 83% 53%)" }}
               className="mb-4"
             />
@@ -157,17 +158,14 @@ export default function CourseDetail() {
                 style={{ color: "white" }}
               >
                 <StarFilled style={{ color: "#faad14" }} />
-                <span className="font-medium">{course.rating || 0}</span>
+                <span className="font-medium">{coursesSummary?.averageRating ?? 0}</span>
               </div>
               <div
                 className="flex items-center gap-1 font-bold"
                 style={{ color: "white" }}
               >
                 <UserOutlined />
-                <span>
-                  {enrollmentsCount ?? 0} student
-                  {(enrollmentsCount ?? 0) === 1 ? "" : "s"}
-                </span>
+                <span>{enrollmentsCount ?? 0}</span>
               </div>
               <div
                 className="flex items-center gap-1"
@@ -233,7 +231,7 @@ export default function CourseDetail() {
                     <Card>
                       <Title level={4}>Course Curriculum</Title>
                       <div className="space-y-2 mt-4">
-                        {lessons.map((lesson: any, i: number) => (
+                        {lessons.map((lesson, i) => (
                           <div
                             key={lesson._id || lesson.id || i}
                             className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent transition-smooth"
@@ -281,10 +279,10 @@ export default function CourseDetail() {
                   children: <DiscussionThread courseId={course._id || id} />,
                 },
                 {
-                  key: 'review',
+                  key: "review",
                   label: "Review",
-                  children: <CourseReview courseId={course._id || id} />
-                }
+                  children: <CourseReview courseId={course._id || id} />,
+                },
               ]}
             />
           </div>
@@ -354,23 +352,16 @@ export default function CourseDetail() {
                     ${course.price ?? 0}
                   </Title>
                   <Text type="secondary">One-time purchase</Text>
-                  <div className="mt-4">
-                    <Button
-                      type="primary"
-                      block
-                      size="large"
-                      onClick={handleBuy}
-                    >
-                      Buy Now
-                    </Button>
-                  </div>
+                  <Button type="primary" block size="large" onClick={handleBuy}>
+                    Buy Now
+                  </Button>
                 </div>
               )}
 
               <div className="pt-4 mt-4 border-t space-y-3">
                 <div className="flex items-center justify-between text-sm">
                   <Text type="secondary">Lessons</Text>
-                  <Text strong>{course?.lessons?.length ?? 0}</Text>
+                  <Text strong>{lessons.length}</Text>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <Text type="secondary">Duration</Text>

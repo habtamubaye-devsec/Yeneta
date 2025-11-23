@@ -22,6 +22,7 @@ import reviewRoutes from "./src/routes/reviewRoutes.js";
 import adminRoutes from "./src/routes/adminRoutes.js"
 
 import geminiRoutes from './src/routes/geminiAiRoutes.js'
+import dashboardRoutes from './src/routes/dashboardRoutes.js';
 
 const app = express();
 
@@ -63,6 +64,7 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/courses", reviewRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/gemini", geminiRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 // app.use("/api", resourceRoutes);
 

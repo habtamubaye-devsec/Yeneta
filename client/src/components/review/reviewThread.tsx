@@ -27,13 +27,13 @@ export const CourseReview = ({ courseId }: CourseReviewProps) => {
   const dispatch = useDispatch<any>();
   const { message } = App.useApp();
 
-  // FIXED SELECTOR (CORRECT STATE KEYS)
   const { courseReviews, loading } = useSelector((state: RootState) => ({
     courseReviews: state.reviews.courseReviews ?? [],
     loading: state.reviews.loading,
   }));
 
   const [newReview, setNewReview] = useState({ rating: 0, comment: "" });
+  const [localReviews, setLocalReviews] = useState<any[]>([]);
 
   const guestUser = {
     name: "Guest User",
@@ -42,8 +42,14 @@ export const CourseReview = ({ courseId }: CourseReviewProps) => {
 
   // Fetch course reviews
   useEffect(() => {
-    if (courseId) dispatch(fetchCourseReviews(courseId));
-  }, [courseId]);
+    if (courseId) {
+      dispatch(fetchCourseReviews(courseId)).then((res: any) => {
+        if (res.meta.requestStatus === "fulfilled") {
+          setLocalReviews(res.payload); // store locally for instant UI updates
+        }
+      });
+    }
+  }, [courseId, dispatch]);
 
   // Submit new review
   const handlePostReview = async () => {
@@ -61,6 +67,9 @@ export const CourseReview = ({ courseId }: CourseReviewProps) => {
 
     if (result.meta.requestStatus === "fulfilled") {
       message.success("Review added successfully");
+
+      // Add new review locally for instant UI update
+      setLocalReviews((prev) => [result.payload, ...prev]);
       setNewReview({ rating: 0, comment: "" });
     } else {
       message.error(result.payload || "Failed to add review");
@@ -74,11 +83,11 @@ export const CourseReview = ({ courseId }: CourseReviewProps) => {
       {/* REVIEW LIST */}
       {loading ? (
         <Spin size="large" />
-      ) : courseReviews.length === 0 ? (
+      ) : localReviews.length === 0 ? (
         <Empty description="No reviews yet" />
       ) : (
         <div className="space-y-4">
-          {courseReviews.map((review: any) => (
+          {localReviews.map((review: any) => (
             <Card key={review._id}>
               <div className="flex gap-3">
                 <Avatar
@@ -88,11 +97,17 @@ export const CourseReview = ({ courseId }: CourseReviewProps) => {
 
                 <div className="flex-1">
                   <Text strong style={{ fontSize: 16 }}>
-                    {review.user?.name || "Unknown User"}
+                    {review.user?.name || guestUser.name}
                   </Text>
 
-                  <div>
-                    <Rate disabled value={review.rating} />
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <Rate
+                      disabled
+                      allowHalf
+                      value={review.rating}
+                      style={{ fontSize: 16 }}
+                    />
+                    <Text type="secondary">{review.rating.toFixed(1)}</Text>
                   </div>
 
                   <Text type="secondary" style={{ fontSize: 12 }}>
@@ -122,6 +137,7 @@ export const CourseReview = ({ courseId }: CourseReviewProps) => {
           style={{ marginTop: 16 }}
         >
           <Rate
+            allowHalf
             value={newReview.rating}
             onChange={(value) =>
               setNewReview({ ...newReview, rating: value })

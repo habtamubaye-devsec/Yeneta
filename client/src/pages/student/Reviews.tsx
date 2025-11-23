@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-
 import {
   Card,
   Button,
@@ -13,12 +12,7 @@ import {
   message,
 } from "antd";
 import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
-
-import {
-  fetchMyReview,
-  updateReview,
-  deleteReview,
-} from "@/features/review/reviewThunks";
+import { fetchMyReviews, updateReview, deleteReview } from "@/features/review/reviewThunks";
 import { RootState, AppDispatch } from "@/store";
 
 const { Text, Title } = Typography;
@@ -26,44 +20,58 @@ const { TextArea } = Input;
 
 export default function Reviews() {
   const dispatch = useDispatch<AppDispatch>();
-
-  const { myReview, loading } = useSelector(
-    (state: RootState) => state.reviews
-  );
+  const { myReviews, loading } = useSelector((state: RootState) => state.reviews);
 
   const [editingReview, setEditingReview] = useState<any>(null);
+  const [localReviews, setLocalReviews] = useState<any[]>([]);
 
+  // Fetch my reviews once
   useEffect(() => {
-    dispatch(fetchMyReview());
+    dispatch(fetchMyReviews()).then((res) => {
+      if (res.meta.requestStatus === "fulfilled") {
+        setLocalReviews(res.payload); // store locally for instant updates
+      }
+    });
   }, [dispatch]);
 
-  const handleDelete = async () => {
-    if (!myReview?._id) return;
-
-    const result = await dispatch(deleteReview(myReview._id));
+  const handleDelete = async (reviewId: string) => {
+    const result = await dispatch(deleteReview(reviewId));
 
     if (result.meta.requestStatus === "fulfilled") {
       message.success("Review deleted successfully");
+      setLocalReviews((prev) => prev.filter((r) => r._id !== reviewId));
+      if (editingReview?._id === reviewId) setEditingReview(null);
     } else {
       message.error(result.payload || "Failed to delete review");
     }
   };
 
-  const handleUpdate = () => {
-    dispatch(
+  const handleUpdate = async () => {
+    if (!editingReview) return;
+
+    const result = await dispatch(
       updateReview({
-        id: editingReview.id,
+        id: editingReview._id,
         rating: editingReview.rating,
         comment: editingReview.comment,
       })
     );
-    setEditingReview(null);
+
+    if (result.meta.requestStatus === "fulfilled") {
+      message.success("Review updated successfully");
+      setLocalReviews((prev) =>
+        prev.map((r) => (r._id === editingReview._id ? editingReview : r))
+      );
+      setEditingReview(null);
+    } else {
+      message.error(result.payload || "Failed to update review");
+    }
   };
 
   if (loading)
     return (
       <DashboardLayout>
-        <Spin size="large" style={{ marginTop: 50 }} />
+        <Spin size="large" style={{ marginTop: 50, display: "block" }} />
       </DashboardLayout>
     );
 
@@ -71,23 +79,23 @@ export default function Reviews() {
     <DashboardLayout>
       <div className="space-y-6">
         <div>
-          <Title level={2}>My Review</Title>
-          <Text type="secondary">Manage your review for this course</Text>
+          <Title level={2}>My Reviews</Title>
+          <Text type="secondary">Manage your reviews for your courses</Text>
         </div>
 
-        {!myReview && (
+        {localReviews.length === 0 && (
           <Card style={{ textAlign: "center", padding: 30 }}>
-            <Title level={4}>You haven't written a review yet</Title>
+            <Title level={4}>You haven't written any reviews yet</Title>
             <Text type="secondary">Complete a course to leave a review.</Text>
           </Card>
         )}
 
-        {myReview && (
-          <Card style={{ borderRadius: 10 }} bodyStyle={{ padding: 16 }}>
+        {localReviews.map((review) => (
+          <Card key={review._id} style={{ borderRadius: 10 }} bodyStyle={{ padding: 16 }}>
             <div style={{ display: "flex", gap: 16 }}>
               <img
-                src={myReview.course?.thumbnailUrl}
-                alt={myReview.course?.title}
+                src={review.course?.thumbnailUrl}
+                alt={review.course?.title}
                 style={{
                   width: 100,
                   height: 70,
@@ -105,10 +113,16 @@ export default function Reviews() {
                   }}
                 >
                   <div>
-                    <Title level={5}>{myReview.course?.title}</Title>
+                    <Title level={5}>{review.course?.title}</Title>
 
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <Rate disabled defaultValue={myReview.rating} />
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <Rate
+                        disabled
+                        allowHalf
+                        value={review.rating}
+                        style={{ fontSize: 16 }}
+                      />
+                      <Text type="secondary">{review.rating.toFixed(1)}</Text>
                     </div>
                   </div>
 
@@ -116,26 +130,22 @@ export default function Reviews() {
                     <div style={{ display: "flex", gap: 8 }}>
                       <Button
                         icon={<EditOutlined />}
-                        onClick={() => setEditingReview(myReview)}
+                        onClick={() => setEditingReview(review)}
                       />
-                      <Button
-                        danger
-                        icon={<DeleteOutlined />}
-                        onClick={handleDelete}
-                      />
+                      <Button danger icon={<DeleteOutlined />} onClick={() => handleDelete(review._id)} />
                     </div>
 
                     <Text type="secondary" style={{ marginLeft: 8 }}>
-                      {new Date(myReview.createdAt).toLocaleDateString()}
+                      {new Date(review.createdAt).toLocaleDateString()}
                     </Text>
                   </div>
                 </div>
 
-                <Text type="secondary">{myReview.comment}</Text>
+                <Text type="secondary">{review.comment}</Text>
               </div>
             </div>
           </Card>
-        )}
+        ))}
       </div>
 
       {/* EDIT MODAL */}
@@ -151,6 +161,7 @@ export default function Reviews() {
             <div>
               <Text strong>Rating</Text>
               <Rate
+                allowHalf
                 value={editingReview.rating}
                 onChange={(value) =>
                   setEditingReview({ ...editingReview, rating: value })
@@ -164,10 +175,7 @@ export default function Reviews() {
                 rows={4}
                 value={editingReview.comment}
                 onChange={(e) =>
-                  setEditingReview({
-                    ...editingReview,
-                    comment: e.target.value,
-                  })
+                  setEditingReview({ ...editingReview, comment: e.target.value })
                 }
               />
             </div>

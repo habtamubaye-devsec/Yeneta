@@ -19,7 +19,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, children 
     return <Navigate to="/login" replace />;
   }
 
-    console.log(allowedRoles, user?.role)
   // If role-based protection is used
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {
     return <Navigate to="/unauthorized" replace />;

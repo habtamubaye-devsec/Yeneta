@@ -105,7 +105,7 @@ export const getEnrollmentsLengthByCourse = createAsyncThunk<
         headers: { Authorization: `Bearer ${token}` },
         withCredentials: true,
       });
-      return data.data.count;
+      return data.data;
     } catch (err: any) {
       return rejectWithValue(
         err.response?.data?.message || "Failed to fetch enrollments count"
