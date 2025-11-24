@@ -30,7 +30,7 @@ import InstructorCourses from "./pages/instructor/MyCourses";
 import CreateCourse from "./pages/instructor/CreateCourse";
 import ManageLessons from "./pages/instructor/ManageLesson";
 import Feedback from "./pages/instructor/Feedback";
-// import Analytics from "./pages/instructor/Analytics";
+import Analytics from "./pages/instructor/Analytics";
 
 // // ✅ Admin Pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -207,14 +207,14 @@ const InnerApp = () => {
                   </ProtectedRoute>
                 }
               />
-              {/* <Route
+              <Route
                 path="/instructor/analytics"
                 element={
                   <ProtectedRoute allowedRoles={["instructor"]}>
                     <Analytics />
                   </ProtectedRoute>
                 }
-              /> */}
+              />
               <Route
                 path="/instructor/profile"
                 element={
