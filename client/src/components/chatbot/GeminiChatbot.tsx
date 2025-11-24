@@ -1,64 +1,78 @@
-import { useState, useRef, useEffect } from 'react';
-import { Card, Input, Button, Space, Avatar, Typography, FloatButton } from 'antd';
-import { SendOutlined, RobotOutlined, UserOutlined, CloseOutlined, MessageOutlined } from '@ant-design/icons';
+import React, { useState, useRef, useEffect } from "react";
+import {
+  Input,
+  Button,
+  Space,
+  Avatar,
+  Typography,
+  FloatButton,
+} from "antd";
+import {
+  SendOutlined,
+  RobotOutlined,
+  UserOutlined,
+  CloseOutlined,
+  MessageOutlined,
+} from "@ant-design/icons";
+import { useDispatch, useSelector } from "react-redux";
+import { askAssistantThunk, addUserMessage } from "../../features/GeminiAI/Gemini";
+
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 const { Text } = Typography;
 
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
-}
-
 export default function GeminiChatbot() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      role: 'assistant',
-      content: 'Hello! I\'m your AI learning assistant. How can I help you today?',
-      timestamp: new Date(),
-    },
-  ]);
-  const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const dispatch = useDispatch();
+  const { messages, loading } = useSelector((state: any) => state.assistant);
 
+  const [input, setInput] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const chatRef = useRef<HTMLDivElement | null>(null);
+
+  // Scroll to bottom
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const el = scrollRef.current;
+    if (!el) return;
+    setTimeout(() => {
+      el.scrollTop = el.scrollHeight;
+    }, 0);
   };
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, loading]);
 
-  const handleSend = async () => {
-    if (!input.trim()) return;
+  // Send message
+  const handleSend = () => {
+    if (!input.trim() || loading) return;
 
-    const userMessage: Message = {
+    const userMessage = {
       id: Date.now().toString(),
-      role: 'user',
+      role: "user",
       content: input,
-      timestamp: new Date(),
+      timestamp: new Date().toISOString(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
-    setInput('');
-    setIsLoading(true);
-
-    // Simulate AI response
-    setTimeout(() => {
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: 'This is a simulated response. Connect to Gemini API for real AI responses.',
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, aiMessage]);
-      setIsLoading(false);
-    }, 1000);
+    dispatch(addUserMessage(userMessage));
+    dispatch(askAssistantThunk(input) as any);
+    setInput("");
   };
+
+  // Click outside to close
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (chatRef.current && !chatRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen]);
 
   if (!isOpen) {
     return (
@@ -74,128 +88,190 @@ export default function GeminiChatbot() {
 
   return (
     <div
+      ref={chatRef}
       style={{
-        position: 'fixed',
-        right: 24,
+        position: "fixed",
+        right: 0,
         bottom: 24,
-        width: 380,
-        height: 600,
-        zIndex: 1000,
-        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
-        borderRadius: 12,
+        width: 420,
+        height: 620,
+        zIndex: 2000,
+        borderRadius: 16,
+        background: "white",
+        overflow: "hidden",
+        boxShadow: "0 12px 32px rgba(0,0,0,0.25)",
+        display: "flex",
+        flexDirection: "column",
       }}
     >
-      <Card
-        style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
-        bodyStyle={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}
+      {/* HEADER */}
+      <div
+        style={{
+          padding: 16,
+          background: "#1e3a8a",
+          color: "white",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexShrink: 0,
+        }}
       >
-        {/* Header */}
-        <div
-          style={{
-            padding: '16px',
-            borderBottom: '1px solid hsl(215 28% 17%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            background: 'hsl(221 83% 53%)',
-            color: 'white',
-          }}
-        >
-          <Space>
-            <RobotOutlined style={{ fontSize: 24 }} />
-            <div>
-              <Text strong style={{ color: 'white', display: 'block' }}>
-                AI Assistant
-              </Text>
-              <Text style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: 12 }}>Powered by Gemini</Text>
-            </div>
-          </Space>
-          <Button
-            type="text"
-            icon={<CloseOutlined />}
-            onClick={() => setIsOpen(false)}
-            style={{ color: 'white' }}
-          />
-        </div>
+        <Space>
+          <RobotOutlined style={{ fontSize: 26 }} />
+          <div>
+            <Text strong style={{ color: "white", fontSize: 16 }}>
+              AI Assistant
+            </Text>
+            <div style={{ fontSize: 12, opacity: 0.8 }}>Powered by Gemini AI</div>
+          </div>
+        </Space>
 
-        {/* Messages */}
-        <div
-          style={{
-            flex: 1,
-            overflowY: 'auto',
-            padding: '16px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 12,
-          }}
-        >
-          {messages.map((message) => (
-            <div
-              key={message.id}
+        <Button
+          type="text"
+          icon={<CloseOutlined />}
+          style={{ color: "white" }}
+          onClick={() => setIsOpen(false)}
+        />
+      </div>
+
+      {/* CHAT MESSAGES */}
+      <div
+        ref={scrollRef}
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          padding: "18px 16px",
+          background: "#f5f5f5",
+          display: "flex",
+          flexDirection: "column",
+          gap: 14,
+          boxSizing: "border-box",
+        }}
+      >
+        {messages.map((msg: any) => (
+          <div
+            key={msg.id}
+            style={{
+              display: "flex",
+              flexDirection: msg.role === "user" ? "row-reverse" : "row",
+              gap: 10,
+              alignItems: "flex-start",
+            }}
+          >
+            <Avatar
+              icon={msg.role === "user" ? <UserOutlined /> : <RobotOutlined />}
               style={{
-                display: 'flex',
-                gap: 8,
-                alignItems: 'flex-start',
-                flexDirection: message.role === 'user' ? 'row-reverse' : 'row',
+                background: msg.role === "user" ? "#2563eb" : "#111827",
+              }}
+            />
+
+            <div
+              style={{
+                maxWidth: "75%",
+                padding: "12px 16px",
+                borderRadius: 14,
+                lineHeight: 1.5,
+                background:
+                  msg.role === "user" ? "#2563eb" : "#e6f0ff",
+                color: msg.role === "user" ? "white" : "#003366",
+                boxShadow:
+                  msg.role === "user"
+                    ? "0 2px 6px rgba(37,99,235,0.3)"
+                    : "0 2px 6px rgba(0,0,0,0.1)",
+                wordBreak: "break-word",
               }}
             >
-              <Avatar
-                icon={message.role === 'user' ? <UserOutlined /> : <RobotOutlined />}
-                style={{
-                  background: message.role === 'user' ? 'hsl(221 83% 53%)' : 'hsl(215 28% 17%)',
-                }}
-              />
-              <div
-                style={{
-                  maxWidth: '70%',
-                  padding: '10px 14px',
-                  borderRadius: 12,
-                  background: message.role === 'user' ? 'hsl(221 83% 53%)' : 'hsl(215 28% 17%)',
-                  color: 'white',
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  code({ inline, className, children, ...props }) {
+                    const language = className?.replace("language-", "") || undefined;
+                    return inline ? (
+                      <code
+                        style={{
+                          background: "rgba(0,0,0,0.1)",
+                          padding: "2px 6px",
+                          borderRadius: 6,
+                          fontSize: 13,
+                        }}
+                        {...props}
+                      >
+                        {children}
+                      </code>
+                    ) : (
+                      <div style={{ marginTop: 8, marginBottom: 8 }}>
+                        <SyntaxHighlighter
+                          style={oneDark}
+                          language={language}
+                          PreTag="div"
+                          customStyle={{
+                            margin: 0,
+                            borderRadius: 8,
+                            fontSize: 13,
+                            padding: "12px",
+                            background: "#011627",
+                          }}
+                        >
+                          {String(children).replace(/\n$/, "")}
+                        </SyntaxHighlighter>
+                      </div>
+                    );
+                  },
                 }}
               >
-                <Text style={{ color: 'white' }}>{message.content}</Text>
-              </div>
+                {msg.content}
+              </ReactMarkdown>
             </div>
-          ))}
-          {isLoading && (
-            <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-              <Avatar icon={<RobotOutlined />} style={{ background: 'hsl(215 28% 17%)' }} />
-              <div
-                style={{
-                  padding: '10px 14px',
-                  borderRadius: 12,
-                  background: 'hsl(215 28% 17%)',
-                }}
-              >
-                <Text style={{ color: 'white' }}>Typing...</Text>
-              </div>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
+          </div>
+        ))}
 
-        {/* Input */}
-        <div style={{ padding: '16px', borderTop: '1px solid hsl(215 28% 17%)' }}>
-          <Space.Compact style={{ width: '100%' }}>
-            <Input
-              placeholder="Type your message..."
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onPressEnter={handleSend}
-              disabled={isLoading}
-              size="large"
-            />
-            <Button
-              type="primary"
-              icon={<SendOutlined />}
-              onClick={handleSend}
-              disabled={isLoading || !input.trim()}
-              size="large"
-            />
-          </Space.Compact>
-        </div>
-      </Card>
+        {loading && (
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <Avatar icon={<RobotOutlined />} style={{ background: "#111827" }} />
+            <div
+              style={{
+                background: "#e6f0ff",
+                padding: "10px 14px",
+                borderRadius: 14,
+                color: "#003366",
+                fontStyle: "italic",
+              }}
+            >
+              Typing…
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* INPUT */}
+      <div
+        style={{
+          padding: 12,
+          borderTop: "1px solid #e5e7eb",
+          background: "white",
+          flexShrink: 0,
+        }}
+      >
+        <Space.Compact style={{ width: "100%" }}>
+          <Input
+            placeholder="Ask me anything..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onPressEnter={handleSend}
+            size="large"
+            style={{ borderRadius: 10 }}
+          />
+
+          <Button
+            type="primary"
+            icon={<SendOutlined />}
+            size="large"
+            disabled={!input.trim() || loading}
+            onClick={handleSend}
+            style={{ borderRadius: 10 }}
+          />
+        </Space.Compact>
+      </div>
     </div>
   );
 }

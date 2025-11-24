@@ -7,6 +7,7 @@ import lessonReducer from "../features/lesson/lessonSlice";
 import enrollmentReducer from "../features/enrollment/enrollmentSlice";
 import certificateReducer from "../features/certificate/certificateSlice";
 import reviewReducer from "../features/review/reviewSlice";
+import assistantReducer from "../features/GeminiAI/Gemini";
 
 export const store = configureStore({
   reducer: {
@@ -18,6 +19,7 @@ export const store = configureStore({
     enrollment: enrollmentReducer,
     certificates: certificateReducer,
     reviews: reviewReducer,
+    assistant: assistantReducer,
   },
 });
 
