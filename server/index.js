@@ -4,7 +4,7 @@ dotenv.config(); // ✅ load env variables first
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import passport from "passport";
+import passp ort from "passport";
 import session from "express-session";
 import bodyParser from "body-parser";
 
