@@ -47,12 +47,11 @@ export const getCategoryById = async (req, res) => {
   }
 };
 
-
 // PATCH /api/categories/:id
 export const updateCategory = async (req, res) => {
   try {
     const { name, description, subCategories } = req.body;
-
+    
     const updatedData = {};
     if (name) updatedData.name = name;
     if (description) updatedData.description = description;
@@ -67,7 +66,6 @@ export const updateCategory = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
-
 
 // DELETE /api/categories/:id
 export const deleteCategory = async (req, res) => {

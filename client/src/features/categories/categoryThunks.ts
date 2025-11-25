@@ -8,7 +8,7 @@ export interface Category {
   subcategories?: string[];
 }
 
-const API_URL = "http://localhost:8000/api/categories"; // Adjust as needed
+const API_URL = "http://localhost:8000/api/categories";
 
 // ✅ Fetch all categories
 export const fetchCategories = createAsyncThunk<Category[]>(
@@ -16,14 +16,14 @@ export const fetchCategories = createAsyncThunk<Category[]>(
   async (_, { rejectWithValue }) => {
     try {
       const response = await axios.get(API_URL);
-      return response.data.data; // assuming { success, data }
+      return response.data.data; // { success, data }
     } catch (err: any) {
       return rejectWithValue(err.response?.data?.message || "Failed to fetch categories");
     }
   }
 );
 
-// ✅ Fetch single category by ID
+// ✅ Fetch category by ID
 export const fetchCategoryById = createAsyncThunk<Category, string>(
   "categories/fetchById",
   async (id, { rejectWithValue }) => {
@@ -39,7 +39,7 @@ export const fetchCategoryById = createAsyncThunk<Category, string>(
   }
 );
 
-// ✅ Create new category
+// ✅ Create category
 export const createCategory = createAsyncThunk<Category, Category>(
   "categories/create",
   async (categoryData, { rejectWithValue }) => {
@@ -47,7 +47,9 @@ export const createCategory = createAsyncThunk<Category, Category>(
       const token = localStorage.getItem("token");
       const response = await axios.post(API_URL, categoryData, {
         headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true,
       });
+      console.log(categoryData)
       return response.data.data;
     } catch (err: any) {
       return rejectWithValue(err.response?.data?.message || "Failed to create category");
@@ -55,24 +57,22 @@ export const createCategory = createAsyncThunk<Category, Category>(
   }
 );
 
-// ✅ Update existing category (including subcategories)
+// ✅ Update category
 export const updateCategory = createAsyncThunk<
   Category,
   { id: string; updates: Partial<Category> }
->(
-  "categories/update",
-  async ({ id, updates }, { rejectWithValue }) => {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await axios.patch(`${API_URL}/${id}`, updates, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      return response.data.data;
-    } catch (err: any) {
-      return rejectWithValue(err.response?.data?.message || "Failed to update category");
-    }
+>("categories/update", async ({ id, updates }, { rejectWithValue }) => {
+  try {
+    const token = localStorage.getItem("token");
+    const response = await axios.patch(`${API_URL}/${id}`, updates, {
+      headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true,
+    });
+    return response.data.data;
+  } catch (err: any) {
+    return rejectWithValue(err.response?.data?.message || "Failed to update category");
   }
-);
+});
 
 // ✅ Delete category
 export const deleteCategory = createAsyncThunk<string, string>(
@@ -82,6 +82,7 @@ export const deleteCategory = createAsyncThunk<string, string>(
       const token = localStorage.getItem("token");
       await axios.delete(`${API_URL}/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true,
       });
       return id;
     } catch (err: any) {

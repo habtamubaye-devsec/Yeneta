@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import {
   Card,
@@ -9,6 +10,8 @@ import {
   List,
   Space,
   message,
+  Spin,
+  Tag,
 } from 'antd';
 import {
   PlusOutlined,
@@ -17,69 +20,100 @@ import {
   FolderOutlined,
 } from '@ant-design/icons';
 
+import {
+  fetchCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+  type Category,
+} from '../../features/categories/categoryThunks';
+import { clearSelectedCategory, setSelectedCategory } from '../../features/categories/categorySlice';
+import type { RootState, AppDispatch } from '@/store';
+
 const { Title, Text } = Typography;
 
 export default function CategoryManagement() {
-  const [categories, setCategories] = useState([
-    { id: 1, name: 'Web Development', courses: 45, slug: 'web-development' },
-    { id: 2, name: 'Mobile Development', courses: 23, slug: 'mobile-development' },
-    { id: 3, name: 'Data Science', courses: 34, slug: 'data-science' },
-    { id: 4, name: 'UI/UX Design', courses: 18, slug: 'ui-ux-design' },
-    { id: 5, name: 'Business', courses: 27, slug: 'business' },
-  ]);
+  const dispatch = useDispatch<AppDispatch>();
+  const { categories, selectedCategory, loading, error } = useSelector(
+    (state: RootState) => state.categories
+  );
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<any>(null);
-  const [newCategory, setNewCategory] = useState({ name: '', slug: '' });
+  const [newCategory, setNewCategory] = useState<Partial<Category>>({ name: '', description: '', subCategories: [] });
+  const [subCategoryInput, setSubCategoryInput] = useState('');
+  const [editSubCategoryInput, setEditSubCategoryInput] = useState('');
 
+  // Fetch categories on mount
+  useEffect(() => {
+    dispatch(fetchCategories());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (error) message.error(error);
+  }, [error]);
+
+  // Add Category
+  const handleAddCategory = async () => {
+    if (!newCategory.name) {
+      message.warning('Please enter a category name');
+      return;
+    }
+    try {
+      await dispatch(createCategory(newCategory)).unwrap();
+      setIsAddModalOpen(false);
+      setNewCategory({ name: '', description: '', subCategories: [] });
+      setSubCategoryInput('');
+      message.success('Category added successfully');
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Edit Category
+  const handleEditCategory = async () => {
+    if (!selectedCategory?.name) {
+      message.warning('Category name cannot be empty');
+      return;
+    }
+    try {
+      await dispatch(updateCategory({ id: selectedCategory._id!, updates: selectedCategory })).unwrap();
+      setIsEditModalOpen(false);
+      dispatch(clearSelectedCategory());
+      setEditSubCategoryInput('');
+      message.success('Category updated successfully');
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Delete Category
+  const handleDeleteCategory = async (id: string) => {
+    try {
+      await dispatch(deleteCategory(id)).unwrap();
+      message.success('Category deleted successfully');
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Open modals
   const openAddModal = () => {
-    setNewCategory({ name: '', slug: '' });
+    setNewCategory({ name: '', description: '', subCategories: [] });
+    setSubCategoryInput('');
     setIsAddModalOpen(true);
   };
 
-  const openEditModal = (category: any) => {
-    setSelectedCategory(category);
+  const openEditModal = (category: Category) => {
+    dispatch(setSelectedCategory(category));
+    setEditSubCategoryInput('');
     setIsEditModalOpen(true);
-  };
-
-  const handleAddCategory = () => {
-    if (!newCategory.name || !newCategory.slug) {
-      message.warning('Please fill all fields');
-      return;
-    }
-    setCategories([
-      ...categories,
-      {
-        id: categories.length + 1,
-        name: newCategory.name,
-        slug: newCategory.slug,
-        courses: 0,
-      },
-    ]);
-    setIsAddModalOpen(false);
-    message.success('Category added successfully');
-  };
-
-  const handleEditCategory = () => {
-    setCategories(
-      categories.map((c) =>
-        c.id === selectedCategory.id ? selectedCategory : c
-      )
-    );
-    setIsEditModalOpen(false);
-    message.success('Category updated successfully');
-  };
-
-  const deleteCategory = (id: number) => {
-    setCategories(categories.filter((c) => c.id !== id));
-    message.success('Category deleted');
   };
 
   return (
     <DashboardLayout>
       <div className="space-y-6 max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-wrap items-center justify-between mb-6 gap-2">
           <div>
             <Title level={2}>Category Management</Title>
             <Text type="secondary">Organize courses into categories</Text>
@@ -91,40 +125,45 @@ export default function CategoryManagement() {
         </div>
 
         <Card title="All Categories" bordered>
-          <List
-            dataSource={categories}
-            renderItem={(category) => (
-              <List.Item
-                actions={[
-                  <Button
-                    key="edit"
-                    icon={<EditOutlined />}
-                    type="text"
-                    onClick={() => openEditModal(category)}
-                  />,
-                  <Button
-                    key="delete"
-                    danger
-                    type="text"
-                    icon={<DeleteOutlined />}
-                    onClick={() => deleteCategory(category.id)}
-                  />,
-                ]}
-              >
-                <List.Item.Meta
-                  avatar={
-                    <FolderOutlined style={{ fontSize: 20, color: '#1677ff' }} />
-                  }
-                  title={<Text strong>{category.name}</Text>}
-                  description={
-                    <Text type="secondary">
-                      {category.courses} courses • {category.slug}
-                    </Text>
-                  }
-                />
-              </List.Item>
-            )}
-          />
+          {loading ? (
+            <Spin tip="Loading categories..." />
+          ) : (
+            <List
+              dataSource={categories}
+              renderItem={(category) => (
+                <List.Item 
+                  actions={[
+                    <Button
+                      key="edit"
+                      icon={<EditOutlined />}
+                      type="text"
+                      onClick={() => openEditModal(category)}
+                    />,
+                    <Button
+                      key="delete"
+                      danger
+                      type="text"
+                      icon={<DeleteOutlined />}
+                      onClick={() => handleDeleteCategory(category._id!)}
+                    />,
+                  ]}
+                >
+                  <List.Item.Meta
+                    avatar={<FolderOutlined style={{ fontSize: 20, color: '#1677ff' }} />}
+                    title={<Text strong>{category.name}</Text>}
+                    description={
+                      <Text type="secondary">
+                        <div className='text-justify'>
+                           <b>Subcategories: </b>{category.subCategories.map((sub) => sub).join(', ')}
+                        </div>
+                        <div className='text-justify'><b>Description: </b>{category.description || 'No description'}</div>
+                      </Text>
+                    }
+                  />
+                </List.Item>
+              )}
+            />
+          )}
         </Card>
 
         {/* Add Category Modal */}
@@ -141,19 +180,55 @@ export default function CategoryManagement() {
               <Input
                 placeholder="e.g. Web Development"
                 value={newCategory.name}
-                onChange={(e) =>
-                  setNewCategory({ ...newCategory, name: e.target.value })
-                }
+                onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
               />
             </div>
+
             <div>
-              <Text strong>Slug</Text>
+              <Text strong>Description</Text>
+              <Input.TextArea
+                placeholder="Add category description"
+                value={newCategory.description}
+                onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
+                rows={3}
+              />
+            </div>
+
+            <div>
+              <Text strong>Subcategories</Text>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+                {(newCategory.subCategories || []).map((sub, idx) => (
+                  <Tag
+                    key={idx}
+                    closable
+                    onClose={() =>
+                      setNewCategory({
+                        ...newCategory,
+                        subCategories: (newCategory.subCategories || []).filter((s) => s !== sub),
+                      })
+                    }
+                  >
+                    {sub}
+                  </Tag>
+                ))}
+              </div>
               <Input
-                placeholder="e.g. web-development"
-                value={newCategory.slug}
-                onChange={(e) =>
-                  setNewCategory({ ...newCategory, slug: e.target.value })
-                }
+                placeholder="Type and press comma or Enter"
+                value={subCategoryInput}
+                onChange={(e) => setSubCategoryInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ',') {
+                    e.preventDefault();
+                    const val = subCategoryInput.trim();
+                    if (val && !(newCategory.subCategories || []).includes(val)) {
+                      setNewCategory({
+                        ...newCategory,
+                        subCategories: [...(newCategory.subCategories || []), val],
+                      });
+                    }
+                    setSubCategoryInput('');
+                  }
+                }}
               />
             </div>
           </Space>
@@ -174,23 +249,61 @@ export default function CategoryManagement() {
                 <Input
                   value={selectedCategory.name}
                   onChange={(e) =>
-                    setSelectedCategory({
-                      ...selectedCategory,
-                      name: e.target.value,
-                    })
+                    dispatch(setSelectedCategory({ ...selectedCategory, name: e.target.value }))
                   }
                 />
               </div>
+
               <div>
-                <Text strong>Slug</Text>
-                <Input
-                  value={selectedCategory.slug}
+                <Text strong>Description</Text>
+                <Input.TextArea
+                  value={selectedCategory.description}
                   onChange={(e) =>
-                    setSelectedCategory({
-                      ...selectedCategory,
-                      slug: e.target.value,
-                    })
+                    dispatch(setSelectedCategory({ ...selectedCategory, description: e.target.value }))
                   }
+                  rows={3}
+                />
+              </div>
+
+              <div>
+                <Text strong>Subcategories</Text>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+                  {(selectedCategory.subCategories || []).map((sub, idx) => (
+                    <Tag
+                      key={idx}
+                      closable
+                      onClose={() =>
+                        dispatch(
+                          setSelectedCategory({
+                            ...selectedCategory,
+                            subCategories: selectedCategory.subCategories!.filter((s) => s !== sub),
+                          })
+                        )
+                      }
+                    >
+                      {sub}
+                    </Tag>
+                  ))}
+                </div>
+                <Input
+                  placeholder="Type and press comma or Enter"
+                  value={editSubCategoryInput}
+                  onChange={(e) => setEditSubCategoryInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ',') {
+                      e.preventDefault();
+                      const val = editSubCategoryInput.trim();
+                      if (val && !(selectedCategory.subCategories || []).includes(val)) {
+                        dispatch(
+                          setSelectedCategory({
+                            ...selectedCategory,
+                            subCategories: [...selectedCategory.subCategories!, val],
+                          })
+                        );
+                      }
+                      setEditSubCategoryInput('');
+                    }
+                  }}
                 />
               </div>
             </Space>

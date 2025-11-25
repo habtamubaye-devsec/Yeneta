@@ -29,6 +29,9 @@ const categorySlice = createSlice({
     clearSelectedCategory: (state) => {
       state.selectedCategory = null;
     },
+    setSelectedCategory: (state, action: PayloadAction<Category>) => {
+      state.selectedCategory = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -91,5 +94,5 @@ const categorySlice = createSlice({
   },
 });
 
-export const { clearSelectedCategory } = categorySlice.actions;
+export const { clearSelectedCategory, setSelectedCategory } = categorySlice.actions;
 export default categorySlice.reducer;
