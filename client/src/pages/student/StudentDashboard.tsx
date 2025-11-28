@@ -1,21 +1,48 @@
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { Card, Progress, Button } from 'antd';
+import { Card, Progress, Button, Spin } from 'antd';
+import { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchStudentDashboard } from '@/features/dashboard/dashboardThunks';
+import { RootState, AppDispatch } from '@/app/store';
 import { BookOutlined, TrophyOutlined, ClockCircleOutlined, RiseOutlined } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
 
 export default function StudentDashboard() {
-  const enrolledCourses = [
+  const dispatch = useDispatch<AppDispatch>();
+  const { student, loading } = useSelector((s: RootState) => s.dashboard);
+
+  const [enrolledCourses, setEnrolledCourses] = useState<any[]>([]);
+
+  useEffect(() => {
+    // Fetch dashboard summary from backend
+    dispatch(fetchStudentDashboard());
+
+    // keep local enrolledCourses fallback as before
+    setEnrolledCourses([
+      { id: 1, title: 'React Fundamentals', progress: 75, instructor: 'Sarah Johnson', thumbnail: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400' },
+      { id: 2, title: 'Advanced TypeScript', progress: 45, instructor: 'Mike Chen', thumbnail: 'https://images.unsplash.com/photo-1516116216624-53e697fedbea?w=400' },
+      { id: 3, title: 'UI/UX Design Principles', progress: 30, instructor: 'Emma Davis', thumbnail: 'https://images.unsplash.com/photo-1581291518633-83b4ebd1d83e?w=400' },
+    ]);
+  }, [dispatch]);
+
+  const enrolledCoursesFallback = [
     { id: 1, title: 'React Fundamentals', progress: 75, instructor: 'Sarah Johnson', thumbnail: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400' },
     { id: 2, title: 'Advanced TypeScript', progress: 45, instructor: 'Mike Chen', thumbnail: 'https://images.unsplash.com/photo-1516116216624-53e697fedbea?w=400' },
     { id: 3, title: 'UI/UX Design Principles', progress: 30, instructor: 'Emma Davis', thumbnail: 'https://images.unsplash.com/photo-1581291518633-83b4ebd1d83e?w=400' },
   ];
 
-  const stats = [
+  const [stats, setStats] = useState(() => [
     { label: 'Enrolled Courses', value: '3', icon: <BookOutlined style={{ fontSize: '32px', color: 'hsl(221 83% 53%)' }} /> },
     { label: 'Completed', value: '5', icon: <TrophyOutlined style={{ fontSize: '32px', color: 'hsl(142 71% 45%)' }} /> },
     { label: 'Hours Learned', value: '42', icon: <ClockCircleOutlined style={{ fontSize: '32px', color: 'hsl(262 52% 47%)' }} /> },
     { label: 'Current Streak', value: '7 days', icon: <RiseOutlined style={{ fontSize: '32px', color: 'hsl(38 92% 50%)' }} /> },
-  ];
+  ])
+
+  if (loading) return (
+    <DashboardLayout>
+      <div style={{ padding: 32, textAlign: 'center' }}><Spin /></div>
+    </DashboardLayout>
+  );
 
   return (
     <DashboardLayout>
@@ -50,7 +77,7 @@ export default function StudentDashboard() {
           </div>
           
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
-            {enrolledCourses.map((course) => (
+            {(enrolledCourses.length ? enrolledCourses : enrolledCoursesFallback).map((course) => (
               <Card key={course.id} hoverable cover={<img alt={course.title} src={course.thumbnail} style={{ height: '192px', objectFit: 'cover' }} />}>
                 <Card.Meta 
                   title={course.title} 

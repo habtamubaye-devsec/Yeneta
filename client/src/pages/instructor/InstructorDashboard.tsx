@@ -1,10 +1,20 @@
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { useEffect, useState } from 'react';
 import { BookOpen, Users, Star, DollarSign, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchInstructorDashboard } from '@/features/dashboard/dashboardThunks';
+import { RootState, AppDispatch } from '@/app/store';
 
 export default function InstructorDashboard() {
+  const dispatch = useDispatch<AppDispatch>();
+  const { instructor, loading } = useSelector((s: RootState) => s.dashboard);
+
+  useEffect(() => {
+    dispatch(fetchInstructorDashboard());
+  }, [dispatch]);
   const colorClasses: Record<string, string> = {
     primary: 'text-blue-500',
     secondary: 'text-purple-500',
@@ -12,12 +22,12 @@ export default function InstructorDashboard() {
     success: 'text-green-500',
   };
 
-  const stats = [
+  const [stats] = useState(() => [
     { label: 'Total Courses', value: '8', icon: BookOpen, color: 'primary', change: '+2 this month' },
     { label: 'Total Students', value: '1,234', icon: Users, color: 'secondary', change: '+123 this month' },
     { label: 'Average Rating', value: '4.8', icon: Star, color: 'warning', change: '+0.2 this month' },
     { label: 'Revenue', value: '$12,450', icon: DollarSign, color: 'success', change: '+15% this month' },
-  ];
+  ]); 
 
   const courses = [
     { 
@@ -53,6 +63,19 @@ export default function InstructorDashboard() {
     published: 'bg-green-100 text-green-600',
     draft: 'bg-yellow-100 text-yellow-600',
   };
+
+  // instructor dashboard is loaded via Redux thunk (fetchInstructorDashboard)
+
+  if (loading) return (
+    <DashboardLayout>
+      <div className="p-8">Loading...</div>
+    </DashboardLayout>
+  );
+
+  const totalCourses = instructor?.totalCourses ?? stats[0].value;
+  const studentsCount = instructor?.studentsCount ?? stats[1].value;
+  const totalReviews = instructor?.totalReviews ?? stats[2].value;
+  const totalEarnings = instructor?.totalEarnings ?? stats[3].value;
 
   return (
     <DashboardLayout>
@@ -192,3 +215,5 @@ export default function InstructorDashboard() {
     </DashboardLayout>
   );
 }
+
+

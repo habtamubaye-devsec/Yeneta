@@ -3,13 +3,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Shield, Database, Settings, Activity, Server, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchSuperAdminDashboard } from '@/features/dashboard/dashboardThunks';
+import { RootState, AppDispatch } from '@/app/store';
+// axios fetch removed — we use the dashboard thunk (fetchSuperAdminDashboard)
 
 export default function SuperAdminDashboard() {
+  const dispatch = useDispatch<AppDispatch>();
+  const { superAdmin, loading } = useSelector((s: RootState) => s.dashboard);
+
+  useEffect(() => {
+    dispatch(fetchSuperAdminDashboard());
+  }, [dispatch]);
+
+  const systemData = superAdmin || {};
+
   const systemStats = [
     { label: 'System Status', value: 'Operational', icon: Server, color: 'text-success', status: 'success' },
     { label: 'Database Size', value: '24.5 GB', icon: Database, color: 'text-primary', status: 'info' },
     { label: 'Active Sessions', value: '1,234', icon: Activity, color: 'text-warning', status: 'warning' },
-    { label: 'Security Alerts', value: '0', icon: Shield, color: 'text-destructive', status: 'success' },
+    { label: 'Security Alerts', value: systemData.securityAlerts ?? '0', icon: Shield, color: 'text-destructive', status: 'success' },
   ];
 
   const systemHealth = [
@@ -25,6 +39,19 @@ export default function SuperAdminDashboard() {
     { action: 'Failed login attempt', user: 'unknown@email.com', time: '2 hours ago', type: 'warning' },
     { action: 'Database optimized', user: 'System', time: '3 hours ago', type: 'success' },
   ];
+
+  const [roleCounts, setRoleCounts] = useState<any[]>([]);
+
+  // Mirror server-provided values into local roleCounts if available
+  useEffect(() => {
+    if (superAdmin?.roleCounts) setRoleCounts(superAdmin.roleCounts || []);
+  }, [superAdmin]);
+
+  if (loading) return (
+    <DashboardLayout>
+      <div className="p-8">Loading...</div>
+    </DashboardLayout>
+  );
 
   return (
     <DashboardLayout>

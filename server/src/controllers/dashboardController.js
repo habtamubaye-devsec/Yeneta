@@ -1,6 +1,7 @@
 import Enrollment from "../models/enrollment.js";
 import Course from "../models/course.js";
 import Review from "../models/reviewModel.js";
+import User from "../models/userModel.js";
 
 export const studentDashboard = async (req, res) => {
   try {
@@ -36,6 +37,7 @@ export const studentDashboard = async (req, res) => {
     });
   }
 };
+
 
 export const instructorDashboard = async (req, res) => {
   try {
@@ -75,5 +77,84 @@ export const instructorDashboard = async (req, res) => {
     });
   }
 };
-// Auto change for Wed Oct 23 2024 03:00:00 GMT+0300 (East Africa Time)
-// Auto change for Thu Oct 24 2024 03:00:00 GMT+0300 (East Africa Time)
+
+// ========================
+// Admin dashboard summary
+// GET /api/dashboard/admin
+// Returns top-level fields expected by frontend: { success, totalUsers, totalCourses, totalEnrollments, totalRevenue, instructorRequests, awaitingCourseApproval, reviewReports }
+// ========================
+export const adminDashboard = async (req, res) => {
+  try {
+    // total users
+    const totalUsers = await User.countDocuments();
+
+    // total courses
+    const totalCourses = await Course.countDocuments();
+
+    // total enrollments and total revenue
+    const enrollments = await Enrollment.find();
+    const totalEnrollments = enrollments.length;
+    const totalRevenue = enrollments.reduce((sum, e) => sum + (Number(e.pricePaid) || 0), 0);
+
+    // instructor requests (field on userModel)
+    const instructorRequests = await User.countDocuments({ requestedToBeInstructor: 'requested' });
+
+    // awaiting course approval (courses that are unpublished)
+    const awaitingCourseApproval = await Course.countDocuments({ published: false });
+
+    // review reports placeholder — if you later implement reported flags, update this
+    // for now make educated guess: count all reviews as reviewReports for the admin overview
+    const reviewReports = await Review.countDocuments();
+
+    return res.status(200).json({
+      success: true,
+      totalUsers,
+      totalCourses,
+      totalEnrollments,
+      totalRevenue,
+      instructorRequests,
+      awaitingCourseApproval,
+      reviewReports,
+    });
+  } catch (error) {
+    console.error("Error fetching admin dashboard data:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+// Re-add superadmin dashboard (ensure export exists for routes)
+export const superAdminDashboard = async (req, res) => {
+  try {
+    const totalUsers = await User.countDocuments();
+    const totalCourses = await Course.countDocuments();
+
+    const enrollments = await Enrollment.find();
+    const totalEnrollments = enrollments.length;
+    const totalRevenue = enrollments.reduce((sum, e) => sum + (Number(e.pricePaid) || 0), 0);
+
+    // counts per role
+    const roles = ["student", "instructor", "admin", "superadmin"];
+    const roleCounts = {};
+    for (const r of roles) {
+      roleCounts[r] = await User.countDocuments({ role: r });
+    }
+
+    // heuristic for security alerts
+    const banned = await User.countDocuments({ status: 'banned' });
+    const unverified = await User.countDocuments({ isVerified: false });
+    const securityAlerts = banned + unverified;
+
+    return res.status(200).json({
+      success: true,
+      totalUsers,
+      totalCourses,
+      totalEnrollments,
+      totalRevenue,
+      roleCounts,
+      securityAlerts,
+    });
+  } catch (error) {
+    console.error("Error fetching superadmin dashboard data:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};

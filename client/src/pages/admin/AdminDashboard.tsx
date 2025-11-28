@@ -3,19 +3,32 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Users, BookOpen, ShoppingCart, DollarSign, TrendingUp, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchAdminDashboard } from '@/features/dashboard/dashboardThunks';
+import { RootState, AppDispatch } from '@/app/store';
 
 export default function AdminDashboard() {
+  const dispatch = useDispatch<AppDispatch>();
+  const { admin, loading } = useSelector((s: RootState) => s.dashboard);
+
+  useEffect(() => {
+    // server-side admin dashboards may not exist yet; this will attempt to fetch if available
+    dispatch(fetchAdminDashboard());
+  }, [dispatch]);
+  const statsFromServer = admin || {};
+
   const stats = [
-    { label: 'Total Users', value: '12,456', icon: Users, color: 'text-primary', change: '+12%' },
-    { label: 'Total Courses', value: '248', icon: BookOpen, color: 'text-secondary', change: '+5%' },
-    { label: 'Total Enrollments', value: '45,678', icon: ShoppingCart, color: 'text-success', change: '+18%' },
-    { label: 'Total Revenue', value: '$156,789', icon: DollarSign, color: 'text-warning', change: '+23%' },
+    { label: 'Total Users', value: String(statsFromServer.totalUsers ?? '12,456'), icon: Users, color: 'text-primary', change: '+12%' },
+    { label: 'Total Courses', value: String(statsFromServer.totalCourses ?? '248'), icon: BookOpen, color: 'text-secondary', change: '+5%' },
+    { label: 'Total Enrollments', value: String(statsFromServer.totalEnrollments ?? '45,678'), icon: ShoppingCart, color: 'text-success', change: '+18%' },
+    { label: 'Total Revenue', value: typeof statsFromServer.totalRevenue === 'number' ? `$${statsFromServer.totalRevenue}` : String(statsFromServer.totalRevenue ?? '$156,789'), icon: DollarSign, color: 'text-warning', change: '+23%' },
   ];
 
   const pendingActions = [
-    { type: 'Instructor Request', count: 12, color: 'bg-warning' },
-    { type: 'Course Approval', count: 8, color: 'bg-primary' },
-    { type: 'Review Reports', count: 5, color: 'bg-destructive' },
+    { type: 'Instructor Request', count: statsFromServer.instructorRequests ?? 0, color: 'bg-warning' },
+    { type: 'Course Approval', count: statsFromServer.awaitingCourseApproval ?? 0, color: 'bg-primary' },
+    { type: 'Review Reports', count: statsFromServer.reviewReports ?? 0, color: 'bg-destructive' },
   ];
 
   const recentUsers = [
@@ -23,6 +36,16 @@ export default function AdminDashboard() {
     { name: 'Jane Smith', email: 'jane@example.com', role: 'instructor', status: 'pending', date: '2024-01-14' },
     { name: 'Mike Johnson', email: 'mike@example.com', role: 'student', status: 'active', date: '2024-01-14' },
   ];
+
+  // server-side admin dashboards may not exist — we attempt to fetch via thunk above
+
+  if (loading) return (
+    <DashboardLayout>
+      <div className="p-8">Loading...</div>
+    </DashboardLayout>
+  );
+
+  // values are already applied into the stats array above
 
   return (
     <DashboardLayout>
