@@ -20,20 +20,20 @@ export default function SuperAdminDashboard() {
   const systemData = superAdmin || {};
 
   const systemStats = [
-    { label: 'System Status', value: 'Operational', icon: Server, color: 'text-success', status: 'success' },
-    { label: 'Database Size', value: '24.5 GB', icon: Database, color: 'text-primary', status: 'info' },
-    { label: 'Active Sessions', value: '1,234', icon: Activity, color: 'text-warning', status: 'warning' },
+    { label: 'System Status', value: systemData.systemStatus ?? 'Operational', icon: Server, color: 'text-success', status: 'success' },
+    { label: 'Database Size', value: systemData.databaseSize ?? '24.5 GB', icon: Database, color: 'text-primary', status: 'info' },
+    { label: 'Active Sessions', value: systemData.activeSessions ?? '1,234', icon: Activity, color: 'text-warning', status: 'warning' },
     { label: 'Security Alerts', value: systemData.securityAlerts ?? '0', icon: Shield, color: 'text-destructive', status: 'success' },
   ];
 
-  const systemHealth = [
+  const systemHealth = systemData.systemHealth ?? [
     { name: 'API Response Time', value: '125ms', status: 'good', percentage: 95 },
     { name: 'Database Load', value: '34%', status: 'good', percentage: 34 },
     { name: 'Storage Usage', value: '67%', status: 'warning', percentage: 67 },
     { name: 'CPU Usage', value: '42%', status: 'good', percentage: 42 },
   ];
 
-  const recentActions = [
+  const recentActions = systemData.recentActions ?? [
     { action: 'User role updated', user: 'admin@learnhub.com', time: '5 minutes ago', type: 'info' },
     { action: 'System backup completed', user: 'System', time: '1 hour ago', type: 'success' },
     { action: 'Failed login attempt', user: 'unknown@email.com', time: '2 hours ago', type: 'warning' },

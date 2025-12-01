@@ -9,7 +9,7 @@ const lessonSchema = new mongoose.Schema(
     },
     title: { type: String, required: true },
     description: { type: String, required: true },
-    position: { type: Number, required: true },
+    position: { type: Number, },
     videoUrl: { type: String, required: true },
     videoPublicId: { type: String },
     videoDuration: { type: Number },

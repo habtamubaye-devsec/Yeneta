@@ -21,28 +21,54 @@ export const fetchCertificates = createAsyncThunk(
 );
 
 // Download or view a single certificate PDF
+// Fetch PDF blob and return URL for viewing; do NOT auto-download.
 export const downloadCertificate = createAsyncThunk(
-  "certificates/download",
+  "certificates/fetchPdf",
   async (courseId: string, { rejectWithValue }) => {
     try {
       const response = await axios.get(`${API_BASE}/${courseId}/certificate`, {
-        responseType: "blob", // expect PDF file
+        responseType: "blob",
         withCredentials: true,
       });
 
-      // Create blob URL
       const blob = new Blob([response.data], { type: "application/pdf" });
       const url = window.URL.createObjectURL(blob);
+      return { courseId, url };
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+);
 
-      // Automatically download
+// Explicitly download the certificate file (forces a download in the browser)
+export const downloadCertificateFile = createAsyncThunk(
+  "certificates/downloadFile",
+  async (
+    payload: { courseId: string; filename?: string },
+    { rejectWithValue }
+  ) => {
+    const { courseId, filename } = payload;
+    try {
+      // Call endpoint with download=true so server sets Content-Disposition: attachment
+      const response = await axios.get(`${API_BASE}/${courseId}/certificate?download=true`, {
+        responseType: "blob",
+        withCredentials: true,
+      });
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      // Trigger download
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", `certificate-${courseId}.pdf`);
+      // if client provided a filename use it, otherwise default to certificate-<id>.pdf
+      const downloadName = filename
+        ? filename
+        : `certificate-${courseId}.pdf`;
+      link.setAttribute("download", downloadName);
       document.body.appendChild(link);
       link.click();
       link.remove();
 
-      // Return blob URL in case you want to view
+      // Return URL for any display if needed
       return { courseId, url };
     } catch (err: any) {
       return rejectWithValue(err.response?.data?.message || err.message);
@@ -85,6 +111,19 @@ const certificateSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       });
+      // explicit download thunk
+      builder
+        .addCase(downloadCertificateFile.pending, (state) => {
+          state.loading = true;
+          state.error = null;
+        })
+        .addCase(downloadCertificateFile.fulfilled, (state) => {
+          state.loading = false;
+        })
+        .addCase(downloadCertificateFile.rejected, (state, action) => {
+          state.loading = false;
+          state.error = action.payload as string;
+        });
   },
 });
 

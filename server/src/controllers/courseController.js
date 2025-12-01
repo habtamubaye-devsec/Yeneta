@@ -1,7 +1,7 @@
-import Course from "../models/Course.js";
+import Course from "../models/course.js";
 import Lesson from "../models/lesson.js"
-import Enrollment from "../models/Enrollment.js";
-import Earning from "../models/Earning.js";
+import Enrollment from "../models/enrollment.js";
+import Earning from "../models/earning.js";
 import cloudinary from "../utils/cloudinary.js";
 
 // ✅ Create a new course (with Cloudinary upload)
@@ -391,6 +391,3 @@ export {
   getStats,
 };
 
-// Auto change for Tue Oct 22 2024 03:00:00 GMT+0300 (East Africa Time)
-// Auto change for Sat Oct 26 2024 03:00:00 GMT+0300 (East Africa Time)
-// Auto change for Tue Oct 29 2024 03:00:00 GMT+0300 (East Africa Time)

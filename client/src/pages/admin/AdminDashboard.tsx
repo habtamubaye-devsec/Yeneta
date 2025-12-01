@@ -1,14 +1,43 @@
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, BookOpen, ShoppingCart, DollarSign, TrendingUp, AlertCircle } from 'lucide-react';
+import { Users, BookOpen, ShoppingCart, DollarSign, TrendingUp, AlertCircle, UserPlus, FileText, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchAdminDashboard } from '@/features/dashboard/dashboardThunks';
 import { RootState, AppDispatch } from '@/app/store';
 
 export default function AdminDashboard() {
+  // small avatar helper: renders image when available, otherwise initials
+  function Avatar({ name, src, size = 36 }: { name?: string; src?: string; size?: number }) {
+    const [failed, setFailed] = useState(false);
+    const initials = (name || 'U').split(' ').map((p) => p[0] || '').join('').slice(0, 2).toUpperCase();
+
+    if (!src || failed) {
+      return (
+        <div
+          style={{ width: size, height: size }}
+          className="rounded-full bg-primary/10 flex items-center justify-center text-sm font-semibold text-primary"
+          aria-hidden
+        >
+          {initials}
+        </div>
+      );
+    }
+
+    return (
+      <img
+        src={src}
+        alt={name ?? 'User avatar'}
+        className="h-9 w-9 rounded-full object-cover"
+        style={{ width: size, height: size }}
+        onError={() => setFailed(true)}
+        loading="lazy"
+      />
+    );
+  }
   const dispatch = useDispatch<AppDispatch>();
   const { admin, loading } = useSelector((s: RootState) => s.dashboard);
 
@@ -19,22 +48,31 @@ export default function AdminDashboard() {
   const statsFromServer = admin || {};
 
   const stats = [
-    { label: 'Total Users', value: String(statsFromServer.totalUsers ?? '12,456'), icon: Users, color: 'text-primary', change: '+12%' },
-    { label: 'Total Courses', value: String(statsFromServer.totalCourses ?? '248'), icon: BookOpen, color: 'text-secondary', change: '+5%' },
-    { label: 'Total Enrollments', value: String(statsFromServer.totalEnrollments ?? '45,678'), icon: ShoppingCart, color: 'text-success', change: '+18%' },
-    { label: 'Total Revenue', value: typeof statsFromServer.totalRevenue === 'number' ? `$${statsFromServer.totalRevenue}` : String(statsFromServer.totalRevenue ?? '$156,789'), icon: DollarSign, color: 'text-warning', change: '+23%' },
+    { label: 'Total Users', value: String(statsFromServer.totalUsers ?? '12,456'), icon: Users, color: 'bg-blue-100 text-blue-600', change: '+12%' },
+    { label: 'Total Courses', value: String(statsFromServer.totalCourses ?? '248'), icon: BookOpen, color: 'bg-purple-100 text-purple-600', change: '+5%' },
+    { label: 'Total Enrollments', value: String(statsFromServer.totalEnrollments ?? '45,678'), icon: ShoppingCart, color: 'bg-green-100 text-green-600', change: '+18%' },
+    { label: 'Total Revenue', value: typeof statsFromServer.totalRevenue === 'number' ? `$${statsFromServer.totalRevenue}` : String(statsFromServer.totalRevenue ?? '$156,789'), icon: DollarSign, color: 'bg-yellow-100 text-yellow-600', change: '+23%' },
   ];
+
+  const navigate = useNavigate();
 
   const pendingActions = [
-    { type: 'Instructor Request', count: statsFromServer.instructorRequests ?? 0, color: 'bg-warning' },
-    { type: 'Course Approval', count: statsFromServer.awaitingCourseApproval ?? 0, color: 'bg-primary' },
-    { type: 'Review Reports', count: statsFromServer.reviewReports ?? 0, color: 'bg-destructive' },
+    { type: 'Instructor Request', count: statsFromServer.instructorRequests ?? 0, color: 'bg-warning', icon: UserPlus, route: '/admin/approve-instructor' },
+    { type: 'Course Approval', count: statsFromServer.awaitingCourseApproval ?? 0, color: 'bg-primary', icon: FileText, route: '/admin/courses' },
+    { type: 'Review Reports', count: statsFromServer.reviewReports ?? 0, color: 'bg-destructive', icon: Star, route: '/admin/reviews' },
   ];
 
-  const recentUsers = [
-    { name: 'John Doe', email: 'john@example.com', role: 'student', status: 'active', date: '2024-01-15' },
-    { name: 'Jane Smith', email: 'jane@example.com', role: 'instructor', status: 'pending', date: '2024-01-14' },
-    { name: 'Mike Johnson', email: 'mike@example.com', role: 'student', status: 'active', date: '2024-01-14' },
+  const recentUsers: { name: string; email: string; role?: string; status?: string; profileImage?: string; createdAt?: string }[] = statsFromServer.recentUsers?.map((u: any) => ({
+    name: u.name,
+    email: u.email,
+    role: u.role,
+    profileImage: u.profileImage,
+    status: u.status,
+    createdAt: u.createdAt,
+  })) ?? [
+    { name: 'John Doe', email: 'john@example.com', role: 'student', status: 'active', createdAt: '2024-01-15' },
+    { name: 'Jane Smith', email: 'jane@example.com', role: 'instructor', status: 'pending', createdAt: '2024-01-14' },
+    { name: 'Mike Johnson', email: 'mike@example.com', role: 'student', status: 'active', createdAt: '2024-01-14' },
   ];
 
   // server-side admin dashboards may not exist — we attempt to fetch via thunk above
@@ -88,12 +126,23 @@ export default function AdminDashboard() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {pendingActions.map((action) => (
-                <div key={action.type} className="p-4 border rounded-lg">
+                <div key={action.type} className="p-4 border-2 border-gray-200 shadow rounded-lg">
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="font-semibold">{action.type}</h3>
                     <Badge className={action.color}>{action.count}</Badge>
                   </div>
-                  <Button variant="outline" size="sm" className="w-full">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => {
+                      // route according to action type
+                      if (action.type === 'Instructor Request') navigate('/admin/approve-instructor');
+                      else if (action.type === 'Course Approval') navigate('/admin/courses');
+                      else if (action.type === 'Review Reports') navigate('/admin/reviews');
+                      else navigate('/admin');
+                    }}
+                  >
                     Review
                   </Button>
                 </div>
@@ -111,16 +160,26 @@ export default function AdminDashboard() {
             <CardContent>
               <div className="space-y-3">
                 {recentUsers.map((user, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
-                      <p className="font-medium">{user.name}</p>
-                      <p className="text-sm text-muted-foreground">{user.email}</p>
+                  <div
+                    key={i}
+                    className="flex items-center justify-between p-3 border-2 border-gray-300 shadow rounded-lg cursor-pointer hover:bg-muted transition-colors"
+                    onClick={() => navigate(`/admin/users?q=${encodeURIComponent(user.email || user.name || '')}`)}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Avatar name={user.name} src={user.profileImage} size={36} />
+                      <div>
+                        <p className="font-medium">{user.name}</p>
+                        <p className="text-xs text-muted-foreground">{new Date(user.createdAt || Date.now()).toLocaleDateString()}</p>
+                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant={user.status === 'active' ? 'default' : 'secondary'}>
                         {user.role}
                       </Badge>
-                      <Badge variant={user.status === 'active' ? 'default' : 'secondary'}>
+                      <Badge variant={user.status === 'active' ? 'secondary' : 'secondary'}>
                         {user.status}
                       </Badge>
                     </div>
@@ -136,11 +195,20 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {[
-                  { label: 'New Enrollments Today', value: 45, max: 100 },
-                  { label: 'Active Users', value: 1234, max: 2000 },
-                  { label: 'Course Completions', value: 23, max: 50 },
-                ].map((item, i) => (
+                {(
+                  statsFromServer.platformActivity
+                    ? [
+                        // Use server totals as the progress max where available
+                        { label: 'New Enrollments Today', value: statsFromServer.platformActivity.newEnrollmentsToday ?? 0, max: Math.max(statsFromServer.totalEnrollments ?? 100, statsFromServer.platformActivity.newEnrollmentsToday ?? 100) },
+                        { label: 'Active Users (30d)', value: statsFromServer.platformActivity.activeUsers30d ?? 0, max: Math.max(statsFromServer.totalUsers ?? 1000, statsFromServer.platformActivity.activeUsers30d ?? 1000) },
+                        { label: 'Course Completions', value: statsFromServer.platformActivity.courseCompletions ?? 0, max: Math.max(statsFromServer.totalEnrollments ?? 50, statsFromServer.platformActivity.courseCompletions ?? 50) },
+                      ]
+                    : [
+                        { label: 'New Enrollments Today', value: 45, max: statsFromServer.totalEnrollments ?? 100 },
+                        { label: 'Active Users', value: 1234, max: statsFromServer.totalUsers ?? 2000 },
+                        { label: 'Course Completions', value: 23, max: statsFromServer.totalEnrollments ?? 50 },
+                      ]
+                ).map((item: any, i: number) => (
                   <div key={i}>
                     <div className="flex justify-between mb-2">
                       <span className="text-sm font-medium">{item.label}</span>
@@ -151,7 +219,7 @@ export default function AdminDashboard() {
                     <div className="w-full bg-muted rounded-full h-2">
                       <div 
                         className="bg-primary h-2 rounded-full transition-all"
-                        style={{ width: `${(item.value / item.max) * 100}%` }}
+                        style={{ width: `${Math.min(100, Math.round((item.value / (item.max||1)) * 100))}%` }}
                       />
                     </div>
                   </div>

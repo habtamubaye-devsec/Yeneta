@@ -70,8 +70,11 @@ export default function ManageLessonsPage() {
             grid={{ gutter: 16, column: 3 }}
             dataSource={lessons}
             renderItem={(lesson: any) => {
+              // New lesson format (server) stores videoUrl directly on lesson
               const resource = lesson.resources && lesson.resources[0];
-              const videoUrl = resource?.url || resource?.content || resource?.path || (resource && typeof resource === 'string' ? resource : null);
+              const videoUrlFromResources = resource?.url || resource?.content || resource?.path || (resource && typeof resource === 'string' ? resource : null);
+              // prefer top-level videoUrl (legacy/new format), then resources
+              const videoUrl = lesson.videoUrl || videoUrlFromResources || null;
               return (
                 <List.Item>
                   <Card title={lesson.title} extra={<Button danger onClick={() => handleDelete(lesson._id)}><Trash2 /></Button>}>

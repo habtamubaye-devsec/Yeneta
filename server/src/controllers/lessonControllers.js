@@ -1,5 +1,5 @@
 import Lesson from "../models/lesson.js";
-import Course from "../models/Course.js";
+import Course from "../models/course.js";
 import cloudinary from "../utils/cloudinary.js";
 import fs from "fs";
 
@@ -19,7 +19,7 @@ export const createLesson = async (req, res) => {
     console.log("📁 Uploaded file:", file?.originalname);
 
     // ✅ Validate
-    if (!title || !description || !position || !file) {
+    if (!title || !description || !file) {
       return res.status(400).json({
         success: false,
         message: "All fields (title, description, position, video) are required.",
@@ -172,5 +172,3 @@ export const deleteLesson = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
-// Auto change for Tue Oct 29 2024 03:00:00 GMT+0300 (East Africa Time)

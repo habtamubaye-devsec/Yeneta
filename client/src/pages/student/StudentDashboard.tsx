@@ -1,6 +1,7 @@
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, Progress, Button, Spin } from 'antd';
 import { useEffect, useState } from 'react';
+import { fetchMyEnrollments } from '@/features/enrollment/enrollmentThunks';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchStudentDashboard } from '@/features/dashboard/dashboardThunks';
 import { RootState, AppDispatch } from '@/app/store';
@@ -12,18 +13,36 @@ export default function StudentDashboard() {
   const { student, loading } = useSelector((s: RootState) => s.dashboard);
 
   const [enrolledCourses, setEnrolledCourses] = useState<any[]>([]);
+  const { enrollments } = useSelector((s: RootState) => s.enrollment);
 
   useEffect(() => {
     // Fetch dashboard summary from backend
     dispatch(fetchStudentDashboard());
 
-    // keep local enrolledCourses fallback as before
+    // keep local enrolledCourses fallback as before; we'll prefer server enrollments when available
     setEnrolledCourses([
       { id: 1, title: 'React Fundamentals', progress: 75, instructor: 'Sarah Johnson', thumbnail: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400' },
       { id: 2, title: 'Advanced TypeScript', progress: 45, instructor: 'Mike Chen', thumbnail: 'https://images.unsplash.com/photo-1516116216624-53e697fedbea?w=400' },
       { id: 3, title: 'UI/UX Design Principles', progress: 30, instructor: 'Emma Davis', thumbnail: 'https://images.unsplash.com/photo-1581291518633-83b4ebd1d83e?w=400' },
     ]);
+    // load enrollments for rendering enrolled courses
+    dispatch(fetchMyEnrollments());
   }, [dispatch]);
+
+  // when enrollments arrive from store, map them to UI cards
+  useEffect(() => {
+    if (!enrollments || enrollments.length === 0) return;
+    const mapped = enrollments.map((e: any) => ({
+      // prefer the course id for links; fallback to enrollment id
+      id: e.course?._id ?? e.course?._id ?? e._id,
+      title: e.course?.title ?? e.course?.name ?? 'Untitled',
+      instructor: e.course?.instructor?.name ?? e.course?.instructor ?? 'Unknown',
+      thumbnail: e.course?.thumbnailUrl ?? e.course?.thumbnail ?? undefined,
+      progress: typeof e.progress === 'number' ? e.progress : (e.progress ?? 0),
+      courseId: e.course?._id ?? e.course,
+    }));
+    setEnrolledCourses(mapped);
+  }, [enrollments]);
 
   const enrolledCoursesFallback = [
     { id: 1, title: 'React Fundamentals', progress: 75, instructor: 'Sarah Johnson', thumbnail: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400' },
@@ -33,10 +52,21 @@ export default function StudentDashboard() {
 
   const [stats, setStats] = useState(() => [
     { label: 'Enrolled Courses', value: '3', icon: <BookOutlined style={{ fontSize: '32px', color: 'hsl(221 83% 53%)' }} /> },
-    { label: 'Completed', value: '5', icon: <TrophyOutlined style={{ fontSize: '32px', color: 'hsl(142 71% 45%)' }} /> },
-    { label: 'Hours Learned', value: '42', icon: <ClockCircleOutlined style={{ fontSize: '32px', color: 'hsl(262 52% 47%)' }} /> },
+    { label: 'Completed Courses', value: '0', icon: <TrophyOutlined style={{ fontSize: '32px', color: 'hsl(142 71% 45%)' }} /> },
+    { label: 'Total Spend', value: '$0', icon: <ClockCircleOutlined style={{ fontSize: '32px', color: 'hsl(262 52% 47%)' }} /> },
     { label: 'Current Streak', value: '7 days', icon: <RiseOutlined style={{ fontSize: '32px', color: 'hsl(38 92% 50%)' }} /> },
   ])
+
+  // update stats when server student summary arrives
+  useEffect(() => {
+    if (!student) return;
+    setStats((prev) => [
+      { ...prev[0], value: String(student.enrollmentCount ?? prev[0].value) },
+      { ...prev[1], value: String(student.completedCourse ?? prev[1].value) },
+      { ...prev[2], value: typeof student.totalSpendMoney === 'number' ? `$${student.totalSpendMoney}` : String(student.totalSpendMoney ?? prev[2].value) },
+      prev[3],
+    ]);
+  }, [student]);
 
   if (loading) return (
     <DashboardLayout>
