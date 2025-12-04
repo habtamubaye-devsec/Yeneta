@@ -46,8 +46,7 @@ export default function AdminDashboard() {
     dispatch(fetchAdminDashboard());
   }, [dispatch]);
   const statsFromServer = admin || {};
-
-  const stats = [
+   const stats = [
     { label: 'Total Users', value: String(statsFromServer.totalUsers ?? '12,456'), icon: Users, color: 'bg-blue-100 text-blue-600', change: '+12%' },
     { label: 'Total Courses', value: String(statsFromServer.totalCourses ?? '248'), icon: BookOpen, color: 'bg-purple-100 text-purple-600', change: '+5%' },
     { label: 'Total Enrollments', value: String(statsFromServer.totalEnrollments ?? '45,678'), icon: ShoppingCart, color: 'bg-green-100 text-green-600', change: '+18%' },

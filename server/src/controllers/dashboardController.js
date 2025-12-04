@@ -148,7 +148,7 @@ export const adminDashboard = async (req, res) => {
     const instructorRequests = await User.countDocuments({ requestedToBeInstructor: 'requested' });
 
     // awaiting course approval (courses that are unpublished)
-    const awaitingCourseApproval = await Course.countDocuments({ published: false });
+    const awaitingCourseApproval = await Course.countDocuments({  status: "pending" });
 
     // review reports placeholder — if you later implement reported flags, update this
     // for now make educated guess: count all reviews as reviewReports for the admin overview
@@ -159,7 +159,7 @@ export const adminDashboard = async (req, res) => {
 
     // details for instructor requests and awaiting course approval
     const instructorRequestsList = await User.find({ requestedToBeInstructor: 'requested' }).limit(6).select('name email createdAt');
-    const awaitingCourseApprovalDetails = await Course.find({ published: false }).limit(6).select('title instructor createdAt').populate('instructor', 'name');
+    const awaitingCourseApprovalDetails = await Course.find({ status: "pending" }).limit(6).select('title instructor createdAt').populate('instructor', 'name');
 
     // platform activity metrics (derived)
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -177,6 +177,48 @@ export const adminDashboard = async (req, res) => {
         courseCompletions += 1;
       }
     }
+
+    // -------------------------
+    // Admin-level UI payloads
+    // Build topCourses across the platform (by student count)
+    const allCourses = await Course.find();
+    const allCourseSummaries = await Promise.all(
+      allCourses.map(async (course) => {
+        const studentCount = await Enrollment.countDocuments({ course: course._id });
+        const enrolls = await Enrollment.find({ course: course._id });
+        const courseRevenue = enrolls.reduce((s, e) => s + (Number(e.pricePaid) || 0), 0);
+        const reviewsForCourse = await Review.find({ course: course._id });
+        const avgR = reviewsForCourse.length
+          ? Math.round((reviewsForCourse.reduce((a, r) => a + (Number(r.rating) || 0), 0) / reviewsForCourse.length) * 10) / 10
+          : 0;
+
+        return {
+          id: course._id,
+          title: course.title,
+          students: studentCount,
+          rating: avgR,
+          revenue: `$${courseRevenue}`,
+          thumbnail: course.thumbnailUrl || course.thumbnail || null,
+          status: course.published ? 'published' : 'draft',
+        };
+      })
+    );
+    const topCourses = allCourseSummaries.sort((a, b) => b.students - a.students).slice(0, 5);
+
+    // recent enrollments across platform (latest 6)
+    const recentEnrollments = await Enrollment.find()
+      .sort({ createdAt: -1 })
+      .limit(6)
+      .populate('user', 'name email')
+      .populate('course', 'title thumbnailUrl');
+
+    // recent reviews across platform (latest 6)
+    const recentReviews = await Review.find()
+      .sort({ createdAt: -1 })
+      .limit(6)
+      .populate('user', 'name')
+      .populate('course', 'title');
+    // -------------------------
 
     return res.status(200).json({
       success: true,
