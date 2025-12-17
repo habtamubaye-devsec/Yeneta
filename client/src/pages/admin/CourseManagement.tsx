@@ -27,6 +27,20 @@ export default function CourseManagement() {
   const [levelFilter, setLevelFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
+
+  // Dynamic max price based on courses
+  const maxPrice = useMemo(() => {
+    if (!courses || courses.length === 0) return 1000;
+    return Math.max(...courses.map(c => c.price || 0));
+  }, [courses]);
+
+  // Update priceRange if maxPrice changes and current max is less
+  useEffect(() => {
+    if (maxPrice > priceRange[1]) {
+      setPriceRange([priceRange[0], maxPrice]);
+    }
+  }, [maxPrice, priceRange[0], priceRange[1]]);
+
   const [sortBy, setSortBy] = useState("createdAt-desc");
 
   useEffect(() => {
@@ -91,6 +105,7 @@ export default function CourseManagement() {
         course.instructor?.name?.toLowerCase().includes(term)
       );
     });
+    console.log("After search filter:", result.length);
 
     if (categoryFilter !== "all") {
       result = result.filter(
@@ -218,12 +233,12 @@ export default function CourseManagement() {
             <Col xs={24} sm={24} md={3}>
               <div>
                 <p className="text-xs text-muted-foreground mb-1">
-                  Price: ${priceRange[0]}–${priceRange[1]}
+                  Price: ${priceRange[0]}–${priceRange[1]} (max: ${maxPrice})
                 </p>
                 <Slider
                   range
                   min={0}
-                  max={1000}
+                  max={maxPrice}
                   step={10}
                   value={priceRange}
                   onChange={(val) => setPriceRange(val as [number, number])}
@@ -242,6 +257,7 @@ export default function CourseManagement() {
             </p>
           ) : (
             filteredCourses.map((course) => (
+              
               <Card key={course._id}>
                 <CardContent className="pt-6">
                   <div className="flex gap-4">
