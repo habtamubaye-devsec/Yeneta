@@ -67,12 +67,65 @@ export const instructorDashboard = async (req, res) => {
       }
     }
     
-    // Build course summaries for instructor dashboard UI
+    const monthTokens = [
+      'hsl(var(--primary))',
+      'hsl(var(--secondary))',
+      'hsl(var(--accent))',
+      'hsl(var(--muted))',
+    ];
+
+    const formatMonthLabel = (date) =>
+      date.toLocaleString('en-US', { month: 'short' });
+
+    // Build the last 6 calendar-month buckets (oldest -> newest)
+    const now = new Date();
+    const monthBuckets = Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+      return {
+        year: d.getFullYear(),
+        month: d.getMonth(),
+        label: formatMonthLabel(d),
+        start: new Date(d.getFullYear(), d.getMonth(), 1),
+        end: new Date(d.getFullYear(), d.getMonth() + 1, 1),
+      };
+    });
+
+    const earliestStart = monthBuckets[0]?.start;
+    const enrollmentsLast6Months = earliestStart
+      ? await Enrollment.find({ instructor: userId, createdAt: { $gte: earliestStart } }).lean()
+      : [];
+
+    const enrollmentByMonth = monthBuckets.map((b) => {
+      const items = enrollmentsLast6Months.filter((e) => {
+        const createdAt = new Date(e.createdAt);
+        return createdAt >= b.start && createdAt < b.end;
+      });
+      return { month: b.label, students: items.length };
+    });
+
+    const revenueByMonth = monthBuckets.map((b) => {
+      const items = enrollmentsLast6Months.filter((e) => {
+        const createdAt = new Date(e.createdAt);
+        return createdAt >= b.start && createdAt < b.end;
+      });
+      const revenue = items.reduce((sum, e) => sum + (Number(e.pricePaid) || 0), 0);
+      return { month: b.label, revenue };
+    });
+
+    // Build course summaries for instructor dashboard UI + analytics
     const courseSummaries = await Promise.all(
       courses.map(async (course) => {
         const studentCount = await Enrollment.countDocuments({ course: course._id });
         const enrolls = await Enrollment.find({ course: course._id });
         const courseRevenue = enrolls.reduce((s, e) => s + (Number(e.pricePaid) || 0), 0);
+
+        // completion is the average progress across enrollments (0-100)
+        const avgCompletion = enrolls.length
+          ? Math.round(
+              enrolls.reduce((s, e) => s + (Number(e.progress) || 0), 0) / enrolls.length
+            )
+          : 0;
+
         const reviewsForCourse = await Review.find({ course: course._id });
         const avgRating = reviewsForCourse.length
           ? Math.round((reviewsForCourse.reduce((a, r) => a + (Number(r.rating) || 0), 0) / reviewsForCourse.length) * 10) / 10
@@ -84,6 +137,8 @@ export const instructorDashboard = async (req, res) => {
           students: studentCount,
           rating: avgRating,
           revenue: `$${courseRevenue}`,
+          revenueValue: courseRevenue,
+          completion: avgCompletion,
           thumbnail: course.thumbnailUrl || course.thumbnail || null,
           status: course.published ? 'published' : 'draft',
         };
@@ -92,6 +147,17 @@ export const instructorDashboard = async (req, res) => {
 
     // Sort by student count and pick top 5 for quick overview
     const topCourses = courseSummaries.sort((a, b) => b.students - a.students).slice(0, 5);
+
+    // Analytics: student distribution by course (top 6)
+    const courseDistribution = courseSummaries
+      .slice()
+      .sort((a, b) => b.students - a.students)
+      .slice(0, 6)
+      .map((c, idx) => ({
+        name: c.title,
+        value: c.students,
+        color: monthTokens[idx % monthTokens.length],
+      }));
 
     // recent enrollments for this instructor (latest 6)
     const recentEnrollments = await Enrollment.find({ instructor: userId })
@@ -116,6 +182,9 @@ export const instructorDashboard = async (req, res) => {
       topCourses,
       recentEnrollments,
       recentReviews,
+      enrollmentByMonth,
+      revenueByMonth,
+      courseDistribution,
     });
   } catch (error) {
     console.error("Error fetching instructor dashboard data:", error);

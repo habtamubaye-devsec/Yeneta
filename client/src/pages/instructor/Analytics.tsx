@@ -15,40 +15,60 @@ import {
   Cell
 } from 'recharts';
 import { TrendingUp, Users, DollarSign, Star, BookOpen, Clock } from 'lucide-react';
+import { useEffect, useMemo } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchInstructorDashboard } from '@/features/dashboard/dashboardThunks';
+import type { AppDispatch, RootState } from '@/app/store';
 
 export default function Analytics() {
-  const stats = [
-    {
-      title: 'Total Students',
-      value: '1,234',
-      change: '+12.5%',
-      icon: Users,
-      trend: 'up'
-    },
-    {
-      title: 'Total Revenue',
-      value: '$45,678',
-      change: '+8.3%',
-      icon: DollarSign,
-      trend: 'up'
-    },
-    {
-      title: 'Average Rating',
-      value: '4.8',
-      change: '+0.2',
-      icon: Star,
-      trend: 'up'
-    },
-    {
-      title: 'Active Courses',
-      value: '12',
-      change: '+2',
-      icon: BookOpen,
-      trend: 'up'
-    }
-  ];
+  const dispatch = useDispatch<AppDispatch>();
+  const { instructor, loading } = useSelector((s: RootState) => s.dashboard);
 
-  const enrollmentData = [
+  useEffect(() => {
+    dispatch(fetchInstructorDashboard());
+  }, [dispatch]);
+
+  const formatMoney = (value: unknown) => {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return '$0';
+    return `$${n.toLocaleString()}`;
+  };
+
+  const stats = useMemo(
+    () => [
+      {
+        title: 'Total Students',
+        value: String(instructor?.studentsCount ?? '0'),
+        change: '',
+        icon: Users,
+        trend: 'up',
+      },
+      {
+        title: 'Total Revenue',
+        value: formatMoney(instructor?.totalEarnings ?? 0),
+        change: '',
+        icon: DollarSign,
+        trend: 'up',
+      },
+      {
+        title: 'Average Rating',
+        value: String(instructor?.avgRating ?? '0.0'),
+        change: '',
+        icon: Star,
+        trend: 'up',
+      },
+      {
+        title: 'Active Courses',
+        value: String(instructor?.totalCourses ?? '0'),
+        change: '',
+        icon: BookOpen,
+        trend: 'up',
+      },
+    ],
+    [instructor]
+  );
+
+  const fallbackEnrollmentData = [
     { month: 'Jan', students: 45 },
     { month: 'Feb', students: 52 },
     { month: 'Mar', students: 68 },
@@ -57,7 +77,7 @@ export default function Analytics() {
     { month: 'Jun', students: 110 },
   ];
 
-  const revenueData = [
+  const fallbackRevenueData = [
     { month: 'Jan', revenue: 4500 },
     { month: 'Feb', revenue: 5200 },
     { month: 'Mar', revenue: 6800 },
@@ -66,36 +86,60 @@ export default function Analytics() {
     { month: 'Jun', revenue: 11000 },
   ];
 
-  const coursePerformance = [
+  const fallbackCourseDistribution = [
     { name: 'React Fundamentals', value: 450, color: 'hsl(var(--primary))' },
     { name: 'Advanced TypeScript', value: 320, color: 'hsl(var(--secondary))' },
     { name: 'Node.js Basics', value: 280, color: 'hsl(var(--accent))' },
     { name: 'UI/UX Design', value: 184, color: 'hsl(var(--muted))' },
   ];
 
-  const topCourses = [
-    {
-      title: 'React Fundamentals',
-      students: 450,
-      rating: 4.8,
-      revenue: '$22,500',
-      completion: 85
-    },
-    {
-      title: 'Advanced TypeScript',
-      students: 320,
-      rating: 4.9,
-      revenue: '$19,200',
-      completion: 78
-    },
-    {
-      title: 'Node.js Basics',
-      students: 280,
-      rating: 4.7,
-      revenue: '$14,000',
-      completion: 82
-    },
-  ];
+  const enrollmentData = (Array.isArray(instructor?.enrollmentByMonth) && instructor.enrollmentByMonth.length)
+    ? instructor.enrollmentByMonth
+    : fallbackEnrollmentData;
+
+  const revenueData = (Array.isArray(instructor?.revenueByMonth) && instructor.revenueByMonth.length)
+    ? instructor.revenueByMonth
+    : fallbackRevenueData;
+
+  const coursePerformance = (Array.isArray(instructor?.courseDistribution) && instructor.courseDistribution.length)
+    ? instructor.courseDistribution
+    : fallbackCourseDistribution;
+
+  const topCourses = (Array.isArray(instructor?.topCourses) && instructor.topCourses.length)
+    ? instructor.topCourses
+    : [
+      { title: 'React Fundamentals', students: 450, rating: 4.8, revenue: '$22,500', completion: 85 },
+      { title: 'Advanced TypeScript', students: 320, rating: 4.9, revenue: '$19,200', completion: 78 },
+      { title: 'Node.js Basics', students: 280, rating: 4.7, revenue: '$14,000', completion: 82 },
+    ];
+
+  const recentActivity = useMemo(() => {
+    const activity: Array<{ action: string; course: string; student: string; time: string }> = [];
+
+    const enrolls = Array.isArray(instructor?.recentEnrollments) ? instructor.recentEnrollments : [];
+    for (const e of enrolls) {
+      activity.push({
+        action: 'New enrollment',
+        course: e?.course?.title || 'Course',
+        student: e?.user?.name || 'Student',
+        time: e?.createdAt ? new Date(e.createdAt).toLocaleString() : '',
+      });
+    }
+
+    const reviews = Array.isArray(instructor?.recentReviews) ? instructor.recentReviews : [];
+    for (const r of reviews) {
+      const rating = Number(r?.rating);
+      const stars = Number.isFinite(rating) ? Math.max(0, Math.min(5, Math.round(rating))) : 0;
+      activity.push({
+        action: `New review (${stars} stars)`,
+        course: r?.course?.title || 'Course',
+        student: r?.user?.name || 'Learner',
+        time: r?.createdAt ? new Date(r.createdAt).toLocaleString() : '',
+      });
+    }
+
+    return activity.slice(0, 6);
+  }, [instructor]);
 
   return (
     <DashboardLayout>
@@ -112,10 +156,12 @@ export default function Analytics() {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between mb-4">
                   <stat.icon className="h-8 w-8 text-primary" />
-                  <span className="text-success text-sm font-medium flex items-center gap-1">
-                    <TrendingUp className="h-4 w-4" />
-                    {stat.change}
-                  </span>
+                  {stat.change ? (
+                    <span className="text-success text-sm font-medium flex items-center gap-1">
+                      <TrendingUp className="h-4 w-4" />
+                      {stat.change}
+                    </span>
+                  ) : null}
                 </div>
                 <div className="text-2xl font-bold mb-1">{stat.value}</div>
                 <p className="text-sm text-muted-foreground">{stat.title}</p>
@@ -123,6 +169,10 @@ export default function Analytics() {
             </Card>
           ))}
         </div>
+
+        {loading ? (
+          <div className="text-sm text-muted-foreground">Loading analytics…</div>
+        ) : null}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Student Enrollment Chart */}
@@ -181,12 +231,16 @@ export default function Analytics() {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    label={(props: any) => {
+                      const name = String(props?.name ?? '');
+                      const percent = Number(props?.percent ?? 0);
+                      return `${name}: ${(percent * 100).toFixed(0)}%`;
+                    }}
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="value"
                   >
-                    {coursePerformance.map((entry, index) => (
+                    {coursePerformance.map((entry: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
@@ -203,7 +257,7 @@ export default function Analytics() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {topCourses.map((course, i) => (
+                {topCourses.map((course: any, i: number) => (
                   <div key={i} className="space-y-2">
                     <div className="flex items-center justify-between">
                       <div>
@@ -239,32 +293,12 @@ export default function Analytics() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {[
-                {
-                  action: 'New enrollment',
-                  course: 'React Fundamentals',
-                  student: 'John Doe',
-                  time: '5 minutes ago'
-                },
-                {
-                  action: 'Course completed',
-                  course: 'Advanced TypeScript',
-                  student: 'Jane Smith',
-                  time: '1 hour ago'
-                },
-                {
-                  action: 'New review (5 stars)',
-                  course: 'React Fundamentals',
-                  student: 'Mike Johnson',
-                  time: '2 hours ago'
-                },
-                {
-                  action: 'New enrollment',
-                  course: 'Node.js Basics',
-                  student: 'Sarah Williams',
-                  time: '3 hours ago'
-                },
-              ].map((activity, i) => (
+              {(recentActivity.length ? recentActivity : [
+                { action: 'New enrollment', course: 'React Fundamentals', student: 'John Doe', time: '5 minutes ago' },
+                { action: 'Course completed', course: 'Advanced TypeScript', student: 'Jane Smith', time: '1 hour ago' },
+                { action: 'New review (5 stars)', course: 'React Fundamentals', student: 'Mike Johnson', time: '2 hours ago' },
+                { action: 'New enrollment', course: 'Node.js Basics', student: 'Sarah Williams', time: '3 hours ago' },
+              ]).map((activity, i) => (
                 <div key={i} className="flex items-center gap-3 p-3 rounded-lg border">
                   <Clock className="h-5 w-5 text-muted-foreground" />
                   <div className="flex-1">
