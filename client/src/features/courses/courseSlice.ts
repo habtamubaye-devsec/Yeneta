@@ -13,12 +13,20 @@ import {
 
 interface Course {
   _id?: string;
+  id?: string;
   title: string;
   description: string;
-  category: string;
-  level: string;
-  price: number;
+  category?: any;
+  instructor?: any;
+  level?: string;
+  price?: number;
   thumbnail?: string;
+  thumbnailUrl?: string;
+  lessons?: any[];
+  enrolledCount?: number;
+  totalDurationSeconds?: number;
+  duration?: string;
+  certificate?: boolean;
 }
 
 interface CourseState {

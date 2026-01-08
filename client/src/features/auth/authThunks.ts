@@ -24,15 +24,21 @@ export const registerUser = createAsyncThunk(
 // VERIFY OTP
 export const verifyOtp = createAsyncThunk(
   "auth/verifyOtp",
-  async ({ userId, otp }: { userId: string; otp: string }, thunkAPI) => {
+  async (
+    { userId, email, otp }: { userId?: string; email?: string; otp: string },
+    thunkAPI
+  ) => {
     try {
       const res = await axios.post("http://localhost:8000/api/auth/verify-otp", {
         userId,
+        email,
         otp,
       });
       return res.data; // expects { message }
     } catch (error: any) {
-      return thunkAPI.rejectWithValue(error.response?.data?.message || "OTP verification failed");
+      return thunkAPI.rejectWithValue(
+        error.response?.data || { message: "OTP verification failed" }
+      );
     }
   }
 );
@@ -64,7 +70,9 @@ export const loginUser = createAsyncThunk(
       );
       return res.data; // { message, user }
     } catch (error: any) {
-      return thunkAPI.rejectWithValue(error.response?.data?.message || "Login failed");
+      return thunkAPI.rejectWithValue(
+        error.response?.data || { message: "Login failed" }
+      );
     }
   }
 );
