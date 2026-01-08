@@ -2,6 +2,7 @@ import User from "../models/userModel.js";
 import bcrypt from "bcrypt";
 import cloudinary from "../utils/cloudinary.js";
 import streamifier from "streamifier";
+import { sendUserNotification } from "../utils/notificationService.js";
 
 // GET /api/users (admin or super admin only)
 export const getAllUsers = async (req, res) => {
@@ -167,6 +168,18 @@ export const approveInstructor = async (req, res) => {
     user.requestedToBeInstructor = "approved";
     await user.save();
 
+    try {
+      const displayName = user?.name ? ` ${user.name}` : "";
+      await sendUserNotification({
+        userId: user._id,
+        type: "success",
+        title: "Instructor request approved",
+        message: `Congratulations${displayName}! Your request to become an instructor has been approved. You can now create and publish courses from your Instructor dashboard.`,
+      });
+    } catch (notifyErr) {
+      console.error("Failed to send instructor-approved notification:", notifyErr);
+    }
+
     res.json({
       success: true,
       message: "User has been promoted to instructor.",
@@ -183,6 +196,7 @@ export const approveInstructor = async (req, res) => {
 export const rejectInstructorRequest = async (req, res) => {
   try {
     const { id } = req.params;
+    const { reason } = req.body ?? {};
 
     const user = await User.findById(id);
     if (!user) {
@@ -198,6 +212,19 @@ export const rejectInstructorRequest = async (req, res) => {
 
     user.requestedToBeInstructor = "none";
     await user.save();
+
+    try {
+      const displayName = user?.name ? ` ${user.name}` : "";
+      const reasonLine = reason ? ` Reason: ${reason}` : "";
+      await sendUserNotification({
+        userId: user._id,
+        type: "warning",
+        title: "Instructor request rejected",
+        message: `Hi${displayName}, your request to become an instructor was not approved at this time.${reasonLine} You can review your profile information and request again later.`,
+      });
+    } catch (notifyErr) {
+      console.error("Failed to send instructor-rejected notification:", notifyErr);
+    }
 
     res.status(200).json({
       success: true,
