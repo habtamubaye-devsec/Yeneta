@@ -5,6 +5,7 @@ import { GithubOutlined, GoogleOutlined } from "@ant-design/icons";
 import { GraduationCap } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/hooks/reduxHooks";
 import { loginUser } from "@/features/auth/authThunks";
+import { setPendingVerification } from "@/features/auth/authSlice";
 import type { RootState } from "../app/store";
 // import { useAuthCheck } from "@/hooks/useAuthCheck";
 
@@ -35,7 +36,21 @@ export default function Login() {
       else if (res.user.role === "admin") navigate("/admin");
       else if (res.user.role === "superadmin") navigate("/superadmin"); 
     } catch (err: any) {
-      message.error(err || "Invalid credentials");
+      if (err?.needsVerification) {
+        dispatch(
+          setPendingVerification({ userId: err.userId, email: err.email || email })
+        );
+        message.warning(
+          err?.message || "Please verify your email before signing in."
+        );
+        navigate("/verify", {
+          state: { email: err.email || email, userId: err.userId },
+          replace: true,
+        });
+        return;
+      }
+
+      message.error(err?.message || err || "Invalid credentials");
     }
   };
 

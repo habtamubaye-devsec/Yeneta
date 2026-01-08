@@ -1,34 +1,22 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button, Input, Card, Form, message, Divider, Space } from "antd";
 import { GithubOutlined, GoogleOutlined } from "@ant-design/icons";
 import { GraduationCap } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/hooks/reduxHooks";
-import { registerUser, verifyOtp } from "@/features/auth/authThunks";
-import { useAuthCheck } from "@/hooks/useAuthCheck";
-import { resendOtp } from "../features/auth/authThunks";
+import { registerUser } from "@/features/auth/authThunks";
 
 export default function Register() {
   const [form] = Form.useForm();
-  const [otp, setOtp] = useState("");
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
-  const {
-    userId,
-    loading,
-    message: successMessage,
-    error,
-  } = useAppSelector((state) => state.auth);
-
-  // // 🔔 Redirect if already authenticated
-  // useAuthCheck();
+  const { loading, error } = useAppSelector((state) => state.auth);
 
   // Show messages from Redux
   useEffect(() => {
-    if (successMessage) message.success(successMessage);
     if (error) message.error(error);
-  }, [successMessage, error]);
+  }, [error]);
 
   // 🟢 Register
   const handleRegister = async (values: {
@@ -41,32 +29,11 @@ export default function Register() {
       return;
     }
     try {
-      await dispatch(registerUser(values)).unwrap();
+      const res = await dispatch(registerUser(values)).unwrap();
+      message.success(res.message || "Registration successful. Check your email for the OTP.");
+      navigate("/verify", { state: { email: values.email, userId: res.userId } });
     } catch {}
   };
-
-  // 🟢 Verify OTP
-  const handleVerifyOtp = async () => {
-    if (!userId) return message.error("Missing user ID");
-    try {
-      await dispatch(verifyOtp({ userId, otp })).unwrap();
-      message.success("OTP verified successfully!");
-      navigate("/login");
-    } catch {}
-  };
-
-  // 🟡 Resend OTP
-const handleResendOtp = async () => {
-  const email = form.getFieldValue("email"); // ✅ get email from form data
-  if (!email) return message.error("Please enter your email first.");
-
-  try {
-    await dispatch(resendOtp({ email })).unwrap();
-    message.success("OTP has been resent to your email!");
-  } catch (err) {
-    message.error("Failed to resend OTP. Please try again.");
-  }
-};
 
   // OAuth login
   const handleOAuthLogin = (provider: "google" | "github") => {
@@ -82,116 +49,76 @@ const handleResendOtp = async () => {
               <GraduationCap className="h-8 w-8 text-white" />
             </div>
           </div>
-          <h2 className="text-2xl font-bold">
-            {userId ? "Verify Your Email" : "Create your account"}
-          </h2>
-          <p className="text-gray-500">
-            {userId
-              ? "Enter the OTP sent to your email to activate your account."
-              : "Start your learning journey today"}
-          </p>
+          <h2 className="text-2xl font-bold">Create your account</h2>
+          <p className="text-gray-500">Start your learning journey today</p>
         </div>
 
-        {!userId ? (
-          <Form layout="vertical" form={form} onFinish={handleRegister}>
-            <Form.Item
-              label="Full Name"
-              name="name"
-              rules={[{ required: true, message: "Please enter your name" }]}
-            >
-              <Input placeholder="John Doe" size="large" />
-            </Form.Item>
+        <Form layout="vertical" form={form} onFinish={handleRegister}>
+          <Form.Item
+            label="Full Name"
+            name="name"
+            rules={[{ required: true, message: "Please enter your name" }]}
+          >
+            <Input placeholder="John Doe" size="large" />
+          </Form.Item>
 
-            <Form.Item
-              label="Email"
-              name="email"
-              rules={[{ required: true, message: "Please enter your email" }]}
-            >
-              <Input type="email" placeholder="john@example.com" size="large" />
-            </Form.Item>
+          <Form.Item
+            label="Email"
+            name="email"
+            rules={[{ required: true, message: "Please enter your email" }]}
+          >
+            <Input type="email" placeholder="john@example.com" size="large" />
+          </Form.Item>
 
-            <Form.Item
-              label="Password"
-              name="password"
-              rules={[
-                { required: true, message: "Please enter your password" },
-              ]}
-            >
-              <Input.Password placeholder="••••••••" size="large" />
-            </Form.Item>
+          <Form.Item
+            label="Password"
+            name="password"
+            rules={[{ required: true, message: "Please enter your password" }]}
+          >
+            <Input.Password placeholder="••••••••" size="large" />
+          </Form.Item>
 
+          <Button
+            type="primary"
+            htmlType="submit"
+            block
+            size="large"
+            loading={loading}
+          >
+            Create Account
+          </Button>
+
+          <Divider plain>Or continue with</Divider>
+
+          <Space direction="vertical" className="w-full" size="middle">
             <Button
-              type="primary"
-              htmlType="submit"
+              icon={<GoogleOutlined />}
               block
               size="large"
-              loading={loading}
+              onClick={() => handleOAuthLogin("google")}
             >
-              Create Account
+              Sign up with Google
             </Button>
-
-            <Divider plain>Or continue with</Divider>
-
-            <Space direction="vertical" className="w-full" size="middle">
-              <Button
-                icon={<GoogleOutlined />}
-                block
-                size="large"
-                onClick={() => handleOAuthLogin("google")}
-              >
-                Sign up with Google
-              </Button>
-              <Button
-                icon={<GithubOutlined />}
-                block
-                size="large"
-                onClick={() => handleOAuthLogin("github")}
-              >
-                Sign up with GitHub
-              </Button>
-            </Space>
-
-            <p className="text-sm text-center mt-4 text-gray-500">
-              Already have an account?{" "}
-              <Link
-                to="/login"
-                className="hover:underline font-medium text-blue-600"
-              >
-                Sign in
-              </Link>
-            </p>
-          </Form>
-        ) : (
-          <Form layout="vertical" onFinish={handleVerifyOtp}>
-            <Form.Item label="OTP Code" required>
-              <Input
-                placeholder="Enter OTP"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                size="large"
-              />
-            </Form.Item>
-
             <Button
-              type="primary"
-              htmlType="submit"
+              icon={<GithubOutlined />}
               block
               size="large"
-              loading={loading}
+              onClick={() => handleOAuthLogin("github")}
             >
-              Verify OTP
+              Sign up with GitHub
             </Button>
-            <Button
-              type="link"
-              block
-              onClick={handleResendOtp}
-              disabled={loading}
-              className="mt-2"
+          </Space>
+
+          <p className="text-sm text-center mt-4 text-gray-500">
+            Already have an account?{" "}
+            <Link
+              to="/login"
+              className="hover:underline font-medium text-blue-600"
             >
-              Resend OTP
-            </Button>
-          </Form>
-        )}
+              Sign in
+            </Link>
+          </p>
+        </Form>
       </Card>
     </div>
   );
