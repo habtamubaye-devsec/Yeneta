@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "@/app/store";
 import { fetchCourses } from "@/features/courses/courseThunks";
@@ -24,6 +24,7 @@ export default function BrowseCourses() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [levelFilter, setLevelFilter] = useState("all");
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
+  const [priceTouched, setPriceTouched] = useState(false);
 
   // Fetch courses, review summary, and categories
   useEffect(() => {
@@ -39,6 +40,19 @@ export default function BrowseCourses() {
   });
 
   const loading = coursesLoading || summaryLoading || categoriesLoading;
+
+  const maxCoursePrice = useMemo(() => {
+    const values = (courses || []).map((c) => Number((c as any)?.price) || 0);
+    return values.length ? Math.max(...values) : 0;
+  }, [courses]);
+
+  const sliderMax = Math.max(1000, maxCoursePrice);
+
+  // Ensure the default price range shows all courses (including expensive ones).
+  useEffect(() => {
+    if (priceTouched) return;
+    setPriceRange([0, sliderMax]);
+  }, [sliderMax, priceTouched]);
 
   // Filtered & normalized courses
   const filteredCourses = courses
@@ -123,10 +137,13 @@ export default function BrowseCourses() {
                 <Slider
                   range
                   min={0}
-                  max={1000}
+                  max={sliderMax}
                   step={10}
                   value={priceRange}
-                  onChange={(val) => setPriceRange(val as [number, number])}
+                  onChange={(val) => {
+                    setPriceTouched(true);
+                    setPriceRange(val as [number, number]);
+                  }}
                 />
               </div>
             </Col>

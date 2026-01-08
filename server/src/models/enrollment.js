@@ -23,6 +23,7 @@ const EnrollmentSchema = new mongoose.Schema(
       enum: ["pending", "in-progress", "completed"], // <-- allowed values
       default: "pending",
     },
+    completedAt: { type: Date },
   },
   { timestamps: true }
 );

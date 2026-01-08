@@ -1,6 +1,7 @@
 import Stripe from "stripe";
 import Enrollment from "../models/enrollment.js";
 import Course from "../models/course.js";
+import { sendUserNotification } from "../utils/notificationService.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -81,13 +82,30 @@ export const handleStripeWebhook = async (req, res) => {
       const existing = await Enrollment.findOne({ user: userId, course: courseId });
       if (!existing) {
         const course = await Course.findById(courseId);
-        await Enrollment.create({
+        const enrollment = await Enrollment.create({
           user: userId,
           course: courseId,
+          instructor: course.instructor,
           pricePaid: course.price,
+          currentLesson: course.lessons?.[0]?._id || null,
+          progress: 0,
           completedLessons: [],
+          completed: "pending",
         });
+
+        try {
+          await sendUserNotification({
+            userId,
+            type: "success",
+            title: "Enrollment confirmed",
+            message: `You are enrolled in \"${course.title}\". Start learning anytime from your My Courses page.`,
+          });
+        } catch (notifyErr) {
+          console.error("Failed to send enrollment notification (webhook):", notifyErr);
+        }
+
         console.log("Enrollment created successfully!");
+        void enrollment;
       }
     } catch (err) {
       console.error("Error creating enrollment:", err);
@@ -136,6 +154,17 @@ export const webhookTest = async (req, res) => {
       completedLessons: [],
     });
 
+    try {
+      await sendUserNotification({
+        userId,
+        type: "success",
+        title: "Enrollment confirmed",
+        message: `You are enrolled in \"${course.title}\". Start learning anytime from your My Courses page.`,
+      });
+    } catch (notifyErr) {
+      console.error("Failed to send enrollment notification (webhook-test):", notifyErr);
+    }
+
     console.log("[webhook-test] Enrollment created successfully for session", sessionId);
     res.status(201).json({ success: true, data: enrollment });
   } catch (err) {
@@ -181,6 +210,17 @@ export const enrollInCourse = async (req, res) => {
       progress: 0,
       completedLessons: [],
     });
+
+    try {
+      await sendUserNotification({
+        userId: req.user._id,
+        type: "success",
+        title: "Enrolled successfully",
+        message: `You are enrolled in \"${course.title}\". Start learning anytime from your My Courses page.`,
+      });
+    } catch (notifyErr) {
+      console.error("Failed to send enrollment notification (manual enroll):", notifyErr);
+    }
 
     res.status(201).json({ success: true, data: enrollment });
   } catch (err) {
@@ -303,9 +343,28 @@ export const updateLessonProgress = async (req, res) => {
 
     enrollment.progress = progress;
 
-    // 4️⃣ Mark course as completed if all lessons done (optional)
-    if (completedLessons === totalLessons && totalLessons > 0) {
-      enrollment.completed = "completed"; // you can customize field name if needed
+    // 4️⃣ Mark course as completed if all lessons done (and notify once)
+    const wasCompleted = enrollment.completed === "completed";
+    if (totalLessons > 0 && completedLessons === totalLessons) {
+      enrollment.completed = "completed";
+      if (!enrollment.completedAt) enrollment.completedAt = new Date();
+
+      if (!wasCompleted) {
+        try {
+          const courseTitle = enrollment.course?.title ? `\"${enrollment.course.title}\"` : "your course";
+          await sendUserNotification({
+            userId: req.user._id,
+            type: "success",
+            title: "Course completed",
+            message: `Congratulations! You completed ${courseTitle}. Your certificate will be available in your Certificates section.`,
+          });
+        } catch (notifyErr) {
+          console.error("Failed to send course-completed notification:", notifyErr);
+        }
+      }
+    } else {
+      // keep a sensible non-completed state
+      enrollment.completed = progress > 0 ? "in-progress" : enrollment.completed;
     }
 
     await enrollment.save();

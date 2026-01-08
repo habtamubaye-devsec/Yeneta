@@ -42,7 +42,6 @@ import CategoryManagement from "./pages/admin/CategoryManagement";
 
 // ✅ SuperAdmin Pages
 import SuperAdminDashboard from "./pages/superadmin/SuperAdminDashboard";
-import RoleManagement from "./pages/superadmin/RoleManagement";
 import SystemSettings from "./pages/superadmin/SystemSettings";
 
 // // ✅ Course Pages
@@ -302,14 +301,6 @@ const InnerApp = () => {
                 element={
                   <ProtectedRoute allowedRoles={["superadmin"]}>
                     <SuperAdminDashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/superadmin/roles"
-                element={
-                  <ProtectedRoute allowedRoles={["superadmin"]}>
-                    <RoleManagement />
                   </ProtectedRoute>
                 }
               />

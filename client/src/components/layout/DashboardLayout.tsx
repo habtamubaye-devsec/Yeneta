@@ -106,7 +106,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
           { key: "/admin/reviews", icon: <StarOutlined />, label: "Review Moderation" },
           { key: "/admin/categories", icon: <FolderOpenOutlined />, label: "Categories" },
           { key: "/admin/notifications", icon: <BellOutlined />, label: "Notifications" },
-          { key: "/superadmin/roles", icon: <UserSwitchOutlined />, label: "Role Management" },
           { key: "/superadmin/settings", icon: <SafetyOutlined />, label: "System Settings" },
         ];
       default:
