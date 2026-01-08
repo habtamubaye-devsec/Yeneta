@@ -4,10 +4,12 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import {
   Card,
   Input,
+  Tabs,
   Table,
   Tag,
   Space,
   Popconfirm,
+  Select,
   message,
 } from "antd";
 import {
@@ -16,17 +18,25 @@ import {
   SafetyOutlined,
   DeleteOutlined,
 } from "@ant-design/icons";
-import { fetchUsers, banAndUnbanUser, deleteUser } from "../../features/user/userThunks";
+import { fetchUsers, banAndUnbanUser, deleteUser, updateUserRole } from "../../features/user/userThunks";
 import type { RootState, AppDispatch } from "../../app/store";
 
 export default function UserManagement() {
   const dispatch = useDispatch<AppDispatch>();
   const { users, loading } = useSelector((state: RootState) => state.users);
+  const authUser = useSelector((state: RootState) => (state as any).auth?.user);
+  const isSuperadmin = authUser?.role === "superadmin";
+
+  const [activeRole, setActiveRole] = useState<"student" | "instructor" | "admin">(
+    "student"
+  );
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    dispatch(fetchUsers());
-  }, [dispatch]);
+    // admin -> students/instructors only; superadmin -> student/instructor/admin via tabs
+    const roleToFetch = isSuperadmin ? activeRole : undefined;
+    dispatch(fetchUsers(roleToFetch));
+  }, [dispatch, activeRole, isSuperadmin]);
 
   // ✅ Action handlers
   const handleBanUnban = async (user: any) => {
@@ -52,6 +62,17 @@ export default function UserManagement() {
       message.success("User deleted successfully");
     } catch (err) {
       message.error("Failed to delete user");
+    }
+  };
+
+  const handleRoleChange = async (userId: string, role: "student" | "instructor" | "admin") => {
+    try {
+      await dispatch(updateUserRole({ userId, role })).unwrap();
+      message.success("Role updated successfully");
+      // refresh current tab list
+      await dispatch(fetchUsers(activeRole)).unwrap();
+    } catch {
+      message.error("Failed to update role");
     }
   };
 
@@ -85,14 +106,24 @@ export default function UserManagement() {
       dataIndex: "role",
       key: "role",
       width: 120,
-      filters: [
-        { text: "Student", value: "student" },
-        { text: "Instructor", value: "instructor" },
-      ],
-      onFilter: (value: any, record: any) => record.role === value,
-      render: (role: string) => {
-        const color = role === "instructor" ? "blue" : "green";
-        return <Tag color={color}>{role.toUpperCase()}</Tag>;
+      render: (role: string, user: any) => {
+        if (!isSuperadmin) {
+          const color = role === "instructor" ? "blue" : role === "admin" ? "orange" : "green";
+          return <Tag color={color}>{String(role).toUpperCase()}</Tag>;
+        }
+
+        return (
+          <Select
+            value={role}
+            style={{ width: 140 }}
+            onChange={(val) => handleRoleChange(user._id, val)}
+            options={[
+              { value: "student", label: "Student" },
+              { value: "instructor", label: "Instructor" },
+              { value: "admin", label: "Admin" },
+            ]}
+          />
+        );
       },
     },
     {
@@ -167,11 +198,25 @@ export default function UserManagement() {
         <div>
           <h1 className="text-3xl font-bold mb-2">User Management</h1>
           <p className="text-muted-foreground">
-            Manage students and instructors — ban, unban, or delete accounts.
+            {isSuperadmin
+              ? "Manage users by role — update roles, ban/unban, or delete accounts."
+              : "Manage students and instructors — ban, unban, or delete accounts."}
           </p>
         </div>
 
         <Card title="All Users">
+          {isSuperadmin && (
+            <Tabs
+              activeKey={activeRole}
+              onChange={(key) => setActiveRole(key as any)}
+              items={[
+                { key: "student", label: "Students" },
+                { key: "instructor", label: "Instructors" },
+                { key: "admin", label: "Admins" },
+              ]}
+            />
+          )}
+
           <div className="flex gap-4 mb-6 flex-wrap">
             <Input
               prefix={<SearchOutlined />}

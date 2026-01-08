@@ -7,10 +7,14 @@ const API_URL = "http://localhost:8000/api/user"
 // ✅ Fetch all users
 export const fetchUsers = createAsyncThunk(
   "users/fetchUsers",
-  async (_, { rejectWithValue }) => {
+  async (
+    role: "student" | "instructor" | "admin" | undefined,
+    { rejectWithValue }
+  ) => {
     try {
       const response = await axios.get(API_URL, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }, withCredentials: true,
+        params: role ? { role } : undefined,
       });
 
       // ✅ Make sure to return the actual array
@@ -19,6 +23,30 @@ export const fetchUsers = createAsyncThunk(
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch users"
       );
+    }
+  }
+);
+
+// ✅ Superadmin: update a user's role (admin/student/instructor)
+export const updateUserRole = createAsyncThunk(
+  "users/updateUserRole",
+  async (
+    { userId, role }: { userId: string; role: "student" | "instructor" | "admin" },
+    { rejectWithValue }
+  ) => {
+    try {
+      const res = await axios.patch(
+        `${API_URL}/${userId}/role`,
+        { role },
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          withCredentials: true,
+        }
+      );
+      return res.data.data;
+    } catch (err: any) {
+      message.error(err.response?.data?.message || "Failed to update user role");
+      return rejectWithValue(err.response?.data?.message || "Error updating user role");
     }
   }
 );

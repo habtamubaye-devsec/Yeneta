@@ -5,6 +5,7 @@ import {
   getCurrentUser,
   updateCurrentUser,
   updateUserStatus,
+  updateUserRole,
   updateUserPassword,
   deleteUser,
   getUserById,
@@ -21,6 +22,7 @@ const router = express.Router();
 router.get("/", protect, authorizeRoles("admin", "superadmin"), getAllUsers);
 router.delete("/:id", protect, authorizeRoles("admin", "superadmin"), deleteUser);
 router.patch("/:id/status", protect, authorizeRoles("admin", "superadmin"), updateUserStatus);
+router.patch("/:id/role", protect, authorizeRoles("superadmin"), updateUserRole);
 router.get("/instructor-requests", protect, authorizeRoles("admin", "superadmin"), getInstructorRequests);
 router.patch("/:id/approve-instructor", protect, authorizeRoles("admin", "superadmin"), approveInstructor);
 router.patch("/:id/reject-instructor", protect, authorizeRoles("admin", "superadmin"), rejectInstructorRequest);

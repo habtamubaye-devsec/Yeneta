@@ -9,6 +9,7 @@ import {
   approveInstructor,
   fetchInstructorRequests,
   rejectInstructorRequest,
+  updateUserRole,
 } from "./userThunks";
 
 interface User {
@@ -72,6 +73,13 @@ const userSlice = createSlice({
     builder.addCase(deleteUser.fulfilled, (state, action) => {
       const userId = action.payload;
       state.users = state.users.filter((user) => user._id !== userId);
+    });
+
+    // 🧑‍⚖️ Superadmin: update user role
+    builder.addCase(updateUserRole.fulfilled, (state, action) => {
+      const updatedUser = action.payload;
+      state.users = state.users.map((u) => (u._id === updatedUser._id ? updatedUser : u));
+      state.successMessage = "User role updated";
     });
 
     // 🔑 Update user password (no direct state update)

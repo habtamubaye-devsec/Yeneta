@@ -7,18 +7,59 @@ import { sendUserNotification } from "../utils/notificationService.js";
 // GET /api/users (admin or super admin only)
 export const getAllUsers = async (req, res) => {
   try {
-    let query = {};
+    const requestedRole = typeof req.query.role === "string" ? req.query.role : undefined;
 
-    // If the requester is an admin, limit visible roles
-    if (req.user.role === "admin") {
-      query = { role: { $in: ["student", "instructor"] } };
+    const allowedRolesByRequester =
+      req.user.role === "superadmin"
+        ? ["student", "instructor", "admin"]
+        : ["student", "instructor"]; // admin
+
+    let query = {
+      role: { $in: allowedRolesByRequester },
+    };
+
+    if (requestedRole) {
+      if (!allowedRolesByRequester.includes(requestedRole)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid role filter",
+        });
+      }
+      query = { role: requestedRole };
     }
-
-    // If the requester is a super admin, show everyone (including admins & super admins)
-    // No filter needed — query remains {}
 
     const users = await User.find(query).select("-password");
     res.json({ success: true,  users });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// PATCH /api/users/:id/role (superadmin only)
+export const updateUserRole = async (req, res) => {
+  try {
+    const { role } = req.body;
+    const allowed = ["student", "instructor", "admin"];
+
+    if (!allowed.includes(role)) {
+      return res.status(400).json({ success: false, message: "Invalid role" });
+    }
+
+    const user = await User.findById(req.params.id).select("-password");
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    if (user.role === "superadmin") {
+      return res
+        .status(403)
+        .json({ success: false, message: "Cannot update superadmin role" });
+    }
+
+    user.role = role;
+    await user.save();
+
+    res.status(200).json({ success: true, data: user });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
