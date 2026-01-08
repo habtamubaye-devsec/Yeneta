@@ -15,15 +15,15 @@ import {
   FileTextOutlined,
   BarChartOutlined,
   SafetyOutlined,
-  UserSwitchOutlined,
   StarOutlined,
   FolderOpenOutlined,
   UserOutlined,
   CheckCircleOutlined,
 } from "@ant-design/icons";
-import { GraduationCap, Key } from "lucide-react";
+import { GraduationCap } from "lucide-react";
 import GeminiChatbot from "@/components/chatbot/GeminiChatbot";
 import { logout } from "@/features/auth/authSlice";
+import { logoutUser } from "@/features/auth/authThunks";
 import NotificationBell from "@/components/NotificationBell";
 
 const { Header, Sider, Content } = Layout;
@@ -38,23 +38,25 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
   const { user } = useSelector((state: any) => state.auth);
 
   const [collapsed, setCollapsed] = useState(false);
-  const [isTablet, setIsTablet] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [drawerVisible, setDrawerVisible] = useState(false);
-  const [drawerWidth, setDrawerWidth] = useState(220);
 
   const drawerBg = "hsl(222 47% 11%)"; // Dark uniform drawer bg
 
-  const handleLogout = () => {
-    dispatch(logout());
-    navigate("/login");
+  const handleLogout = async () => {
+    try {
+      // Clear server cookie session
+      await dispatch(logoutUser() as any);
+    } finally {
+      // Always clear local state
+      dispatch(logout());
+      navigate("/login", { replace: true });
+    }
   };
 
   const handleResize = () => {
     const width = window.innerWidth;
-    setIsTablet(width <= 820);
     setIsMobile(width <= 500);
-    setDrawerWidth(width < 500 ? 160 : 220);
 
     if (width <= 820) setCollapsed(true);
     else setCollapsed(false);
