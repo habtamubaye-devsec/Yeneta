@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch, RootState } from "@/redux/store";
+import type { AppDispatch, RootState } from "@/app/store";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,7 @@ export default function LessonPlayer() {
 
   const [completedLessons, setCompletedLessons] = useState<string[]>([]);
   const [canComplete, setCanComplete] = useState(false);
-  const [maxAllowedTime, setMaxAllowedTime] = useState(0);
+  const maxAllowedTimeRef = useRef(0);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   // Redux states
@@ -44,6 +44,9 @@ export default function LessonPlayer() {
     loading: lessonLoading,
     error: lessonError,
   } = useSelector((state: RootState) => state.lessons);
+
+  const lessonsList = (lessons as any[]) || [];
+  const courseLessons = ((course as any)?.lessons as any[]) || [];
 
   // Load course, lessons, and progress
   useEffect(() => {
@@ -72,16 +75,36 @@ export default function LessonPlayer() {
   const error = courseError || lessonError;
 
   const currentLessonIndex = useMemo(() => {
-    return lessons.findIndex(
+    return lessonsList.findIndex(
       (l: any) => String(l._id ?? l.id) === String(lessonId)
     );
-  }, [lessons, lessonId]);
+  }, [lessonsList, lessonId]);
 
   const currentLesson =
-    currentLessonIndex >= 0 ? lessons[currentLessonIndex] : lessons[0];
+    currentLessonIndex >= 0 ? lessonsList[currentLessonIndex] : lessonsList[0];
 
-  const progress = lessons.length
-    ? Math.round((completedLessons.length / lessons.length) * 200)
+  const activeLessonId = useMemo(() => {
+    const fromRoute = lessonId ? String(lessonId) : "";
+    if (fromRoute) return fromRoute;
+    return String(currentLesson?._id ?? currentLesson?.id ?? "");
+  }, [lessonId, currentLesson]);
+
+  // Reset playback guards when switching lessons
+  useEffect(() => {
+    setCanComplete(false);
+    maxAllowedTimeRef.current = 0;
+
+    if (videoRef.current) {
+      try {
+        videoRef.current.currentTime = 0;
+      } catch {
+        // ignore
+      }
+    }
+  }, [lessonId]);
+
+  const progress = lessonsList.length
+    ? Math.round((completedLessons.length / lessonsList.length) * 100)
     : 0;
 
   // Video playback handlers
@@ -90,10 +113,19 @@ export default function LessonPlayer() {
     const current = videoRef.current.currentTime;
 
     // Prevent skipping ahead
-    if (current > maxAllowedTime + 0.5) {
-      videoRef.current.currentTime = maxAllowedTime;
+    if (current > maxAllowedTimeRef.current + 0.5) {
+      videoRef.current.currentTime = maxAllowedTimeRef.current;
     } else {
-      setMaxAllowedTime(current);
+      maxAllowedTimeRef.current = current;
+    }
+  };
+
+  const handleSeeking = () => {
+    if (!videoRef.current) return;
+    const current = videoRef.current.currentTime;
+
+    if (current > maxAllowedTimeRef.current + 0.5) {
+      videoRef.current.currentTime = maxAllowedTimeRef.current;
     }
   };
 
@@ -168,11 +200,12 @@ export default function LessonPlayer() {
               <CardContent className="p-0">
                 {currentLesson?.videoUrl ? (
                   <video
-                    key={currentLesson._id}
+                    key={String(currentLesson?._id ?? currentLesson?.id)}
                     ref={videoRef}
                     controls
                     className="w-full aspect-video rounded-lg bg-black"
                     onTimeUpdate={handleTimeUpdate}
+                    onSeeking={handleSeeking}
                     onEnded={handleVideoEnded}
                   >
                     <source src={currentLesson.videoUrl} type="video/mp4" />
@@ -189,7 +222,10 @@ export default function LessonPlayer() {
             <Card>
               <CardHeader>
                 <CardTitle>
-                  <span className="text-gray-600">Lesson Title:</span>{" "}
+                  <span className="text-gray-600">Lesson</span>{" "}
+                  <span className="text-gray-600">
+                    {currentLessonIndex >= 0 ? currentLessonIndex + 1 : 1}:
+                  </span>{" "}
                   {currentLesson?.title}
                 </CardTitle>
               </CardHeader>
@@ -209,7 +245,7 @@ export default function LessonPlayer() {
                       onClick={markComplete}
                       variant={
                         completedLessons.includes(
-                          currentLesson?._id ?? currentLesson?.id
+                          String(currentLesson?._id ?? currentLesson?.id)
                         )
                           ? "success"
                           : "default"
@@ -217,12 +253,12 @@ export default function LessonPlayer() {
                       disabled={
                         !canComplete &&
                         !completedLessons.includes(
-                          currentLesson?._id ?? currentLesson?.id
+                          String(currentLesson?._id ?? currentLesson?.id)
                         )
                       }
                     >
                       {completedLessons.includes(
-                        currentLesson?._id ?? currentLesson?.id
+                        String(currentLesson?._id ?? currentLesson?.id)
                       ) ? (
                         <>
                           <CheckCircle2 className="h-4 w-4 mr-2" />
@@ -255,7 +291,7 @@ export default function LessonPlayer() {
                   {currentLessonIndex < lessons.length - 1 && (
                     <Link
                       to={`/courses/${courseId}/lesson/${
-                        lessons[currentLessonIndex + 1]._id
+                        lessonsList[currentLessonIndex + 1]._id
                       }`}
                       className="flex-1"
                     >
@@ -277,7 +313,12 @@ export default function LessonPlayer() {
                 <CardTitle>Course Content</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                {course?.lessons.map((lesson: any) => (
+                {courseLessons.map((lesson: any, idx: number) => {
+                  const lessonIdStr = String(lesson._id ?? lesson.id);
+                  const isActive = lessonIdStr === activeLessonId;
+                  const isCompleted = completedLessons.includes(lessonIdStr);
+
+                  return (
                   <Link
                     key={lesson._id ?? lesson.id}
                     to={`/courses/${courseId}/lesson/${
@@ -286,12 +327,12 @@ export default function LessonPlayer() {
                   >
                     <div
                       className={`flex items-start gap-3 p-3 rounded-lg transition-all ${
-                        lesson._id === currentLesson?._id
+                        isActive
                           ? "bg-primary/10"
                           : "hover:bg-accent"
                       }`}
                     >
-                      {completedLessons.includes(lesson._id ?? lesson.id) ? (
+                      {isCompleted ? (
                         <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
                       ) : (
                         <Circle className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
@@ -303,8 +344,8 @@ export default function LessonPlayer() {
                           ) : (
                             <FileText className="h-4 w-4 text-muted-foreground" />
                           )}
-                          <span className="text-sm font-medium truncate">
-                            {lesson.title}
+                          <span className={`text-sm font-medium truncate ${isActive ? "text-primary" : ""}`}>
+                            Lesson {idx + 1}: {lesson.title}
                           </span>
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
@@ -315,7 +356,8 @@ export default function LessonPlayer() {
                       </div>
                     </div>
                   </Link>
-                ))}
+                  );
+                })}
               </CardContent>
             </Card>
           </div>

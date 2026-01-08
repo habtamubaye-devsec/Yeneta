@@ -5,6 +5,19 @@ import Earning from "../models/earning.js";
 import cloudinary from "../utils/cloudinary.js";
 import { sendUserNotification } from "../utils/notificationService.js";
 
+const formatDurationFromSeconds = (totalSeconds) => {
+  const safeSeconds = Number.isFinite(totalSeconds) ? Math.max(0, Math.round(totalSeconds)) : 0;
+  if (safeSeconds <= 0) return "0h";
+
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+
+  if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
+  if (hours > 0) return `${hours}h`;
+  if (minutes > 0) return `${minutes}m`;
+  return `${safeSeconds}s`;
+};
+
 // ✅ Create a new course (with Cloudinary upload)
 const createCourse = async (req, res) => {
    try {
@@ -294,12 +307,102 @@ const deleteCourse = async (req, res) => {
 // Get all courses (public)
 const getAllCourses = async (req, res) => {
   try {
-    const courses = await Course.find({ status: "published" }) // ✅ only published courses
-      .populate("instructor", "name email") // show instructor info
-      .populate("category", "name") // show category name
-      .select("-lessons"); // exclude lessons for performance
+    // Compute enrolledCount and duration without sending lessons
+    const courses = await Course.aggregate([
+      { $match: { status: "published" } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "instructor",
+          foreignField: "_id",
+          as: "instructor",
+        },
+      },
+      { $unwind: { path: "$instructor", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "categories",
+          localField: "category",
+          foreignField: "_id",
+          as: "category",
+        },
+      },
+      { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "lessons",
+          localField: "lessons",
+          foreignField: "_id",
+          as: "_lessons",
+        },
+      },
+      {
+        $addFields: {
+          totalDurationSeconds: {
+            $sum: {
+              $map: {
+                input: "$_lessons",
+                as: "l",
+                in: { $ifNull: ["$$l.videoDuration", 0] },
+              },
+            },
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: "enrollments",
+          let: { courseId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$course", "$$courseId"] },
+                    { $eq: ["$status", "active"] },
+                  ],
+                },
+              },
+            },
+            { $count: "count" },
+          ],
+          as: "_enrollments",
+        },
+      },
+      {
+        $addFields: {
+          enrolledCount: {
+            $ifNull: [{ $arrayElemAt: ["$_enrollments.count", 0] }, 0],
+          },
+        },
+      },
+      {
+        $project: {
+          _lessons: 0,
+          _enrollments: 0,
+          lessons: 0,
+          "instructor.password": 0,
+          "instructor.otp": 0,
+          "instructor.otpExpiry": 0,
+          "instructor.__v": 0,
+          "category.__v": 0,
+        },
+      },
+    ]);
 
-    res.json({ success: true, data: courses });
+    const enriched = courses.map((c) => ({
+      ...c,
+      duration: formatDurationFromSeconds(c.totalDurationSeconds),
+      certificate: c.certificate !== false,
+      instructor: c.instructor
+        ? { _id: c.instructor._id, name: c.instructor.name, email: c.instructor.email }
+        : undefined,
+      category: c.category
+        ? { _id: c.category._id, name: c.category.name }
+        : undefined,
+    }));
+
+    res.json({ success: true, data: enriched });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -326,14 +429,34 @@ const getCourseById = async (req, res) => {
       .populate("instructor", "name email")
       .populate({
         path: "lessons",
-        select: "title content videoUrl resources",
+        select: "title content videoUrl resources videoDuration",
       });
 
     if (!course) {
       return res.status(404).json({ success: false, message: "Course not found" });
     }
 
-    res.json({ success: true, data: course });
+    const lessons = Array.isArray(course.lessons) ? course.lessons : [];
+    const totalDurationSeconds = lessons.reduce((sum, lesson) => {
+      const val = Number(lesson?.videoDuration);
+      return sum + (Number.isFinite(val) ? val : 0);
+    }, 0);
+
+    const enrolledCount = await Enrollment.countDocuments({
+      course: course._id,
+      status: "active",
+    });
+
+    res.json({
+      success: true,
+      data: {
+        ...course.toObject(),
+        totalDurationSeconds,
+        duration: formatDurationFromSeconds(totalDurationSeconds),
+        enrolledCount,
+        certificate: course.certificate !== false,
+      },
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
