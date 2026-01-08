@@ -1,9 +1,9 @@
-    import User from "../models/userModel.js";
-import asyncHandler from "express-async-handler";
-import crypto from "crypto";
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
-import { sendVerificationEmail } from "../utils/verificationEmail.js";
+  import User from "../models/userModel.js";
+  import asyncHandler from "express-async-handler";
+  import crypto from "crypto";
+  import bcrypt from "bcrypt";
+  import jwt from "jsonwebtoken";
+  import { sendVerificationEmail } from "../utils/verificationEmail.js";
 
 // 📌 Generate JWT
 const generateToken = (user) => {
@@ -42,19 +42,27 @@ const registerUser = asyncHandler(async (req, res) => {
     isVerified: false,
   });
 
-  await sendVerificationEmail({ to: email, otp });
+  await sendVerificationEmail({ to: email, name, otp });
 
   res.status(201).json({
     message: "User registered successfully. Check your email for the OTP.",
     userId: user._id,
+    email: user.email,
   });
 });
 
 // 🔑 Verify OTP
 const verifyOtp = asyncHandler(async (req, res) => {
-  const { userId, otp } = req.body;
+  const { userId, email, otp } = req.body;
 
-  const user = await User.findById(userId);
+  // Allow verification using either userId or email so users can recover after refresh
+  let user = null;
+  if (userId) {
+    user = await User.findById(userId);
+  } else if (email) {
+    user = await User.findOne({ email });
+  }
+
   if (!user) return res.status(404).json({ message: "User not found" });
   if (user.isVerified) return res.status(400).json({ message: "Already verified" });
   if (user.otp !== otp) return res.status(400).json({ message: "Invalid OTP" });
@@ -85,7 +93,7 @@ const resendOtp = asyncHandler(async (req, res) => {
   user.otpExpiry = Date.now() + 10 * 60 * 1000;
   await user.save();
 
-  await sendVerificationEmail({ to: user.email, otp });
+  await sendVerificationEmail({ to: user.email, name: user.name, otp });
 
   res.status(200).json({ message: "New OTP sent to your email" });
 });
@@ -103,8 +111,29 @@ const login = asyncHandler(async (req, res) => {
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) return res.status(401).json({ message: "Invalid email or password" });
 
-  if (!user.isVerified)
-    return res.status(401).json({ message: "Please verify your email first" });
+  if (!user.isVerified) {
+    // Refresh OTP to ensure the user always has a valid code when attempting login
+    const otp = crypto.randomInt(100000, 999999).toString();
+    user.otp = otp;
+    user.otpExpiry = Date.now() + 10 * 60 * 1000;
+    await user.save();
+
+    await sendVerificationEmail({ to: user.email, name: user.name, otp });
+
+    return res.status(403).json({
+      message: "Please verify your email before logging in. A new code has been sent.",
+      needsVerification: true,
+      userId: user._id,
+      email: user.email,
+    });
+  }
+
+  if (user.status !== "active") {
+    return res.status(403).json({
+      message: "Your account is not active. Please contact support.",
+      accountStatus: user.status,
+    });
+  }
 
   const token = generateToken(user);
 
@@ -119,7 +148,14 @@ const login = asyncHandler(async (req, res) => {
   res.status(200).json({
     message: "Login successful",
     token,
-    user: { id: user._id, email: user.email, name: user.name, role: user.role },
+    user: {
+      id: user._id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      status: user.status,
+      isVerified: user.isVerified,
+    },
   });
 });
 

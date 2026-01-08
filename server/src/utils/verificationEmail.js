@@ -1,43 +1,67 @@
-import nodemailer from 'nodemailer';
-import dotenv from 'dotenv';
+import nodemailer from "nodemailer";
+import ejs from "ejs";
+import path from "path";
+import fs from "fs";
+import { fileURLToPath } from "url";
 
-dotenv.config(); // Load environment variables from .env
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// Create transporter for Gmail
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  service: "gmail", // or your SMTP provider
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD, // Gmail App Password
   },
 });
 
-/**
- * Send a verification email
- * @param {string} to - recipient email
- * @param {string} otp - verification code
- */
-export const sendVerificationEmail = async ({ to, otp }) => {
+export const sendVerificationEmail = async ({
+  to,
+  name,
+  otp,
+  expiresMinutes = 10,
+}) => {
   try {
-    const mailOptions = {
+    const appName = process.env.APP_NAME || "Yeneta";
+    const templatePath = path.join(__dirname, "../templates/verifyEmail.ejs");
+
+    const logoPath = path.join(__dirname, "../templates/yeneta2.png");
+    const logoCid = fs.existsSync(logoPath) ? "yeneta-logo" : null;
+
+    const html = await ejs.renderFile(templatePath, {
+      appName,
+      name,
+      otp,
+      expiresMinutes,
+      logoCid,
+    });
+
+    const text =
+      `${appName} verification code: ${otp}\n\n` +
+      `This code expires in ${expiresMinutes} minutes.\n` +
+      `If you didn’t request this, you can ignore this email.`;
+
+    const info = await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to,
-      subject: 'Email Verification Code',
-      html: `<p>Your verification code is: <strong>${otp}</strong></p>`,
-    };
+      subject: `${appName} — Email verification code`,
+      text,
+      html,
+      attachments: logoCid
+        ? [
+            {
+              filename: "logo.png",
+              path: logoPath,
+              cid: logoCid,
+            },
+          ]
+        : [],
+    });
 
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Email sent:', info.response);
+    console.log("Verification email sent:", info.response);
     return info;
   } catch (error) {
-    console.error('Error sending email:', error);
+    console.error("Error sending verification email:", error);
     throw error;
   }
 };
-
-// Test sending email (optional)
-if (process.argv[2] === 'test') {
-  sendVerificationEmail({ to: 'recipient@example.com', otp: '123456' })
-    .then(() => console.log('Test email sent successfully'))
-    .catch(console.error);
-}
