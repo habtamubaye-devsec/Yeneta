@@ -51,6 +51,10 @@ import CourseDetail from "./pages/courses/CourseDetail";
 import EnrollmentSuccess from "./pages/enrollment/Success";
 import ApproveInstructor from "./pages/admin/approve-instructor";
 
+// ✅ Notifications
+import Notifications from "./pages/Notifications";
+import AdminSendNotification from "./pages/AdminSendNotification";
+
 // import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -112,6 +116,16 @@ const InnerApp = () => {
                 element={
                   <ProtectedRoute>
                     <LessonPlayer />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Notifications */}
+              <Route
+                path="/notifications"
+                element={
+                  <ProtectedRoute>
+                    <Notifications />
                   </ProtectedRoute>
                 }
               />
@@ -273,14 +287,14 @@ const InnerApp = () => {
                   </ProtectedRoute>
                 }
               />
-              {/* <Route
+              <Route
                 path="/admin/notifications"
                 element={
                   <ProtectedRoute allowedRoles={["admin", "superadmin"]}>
-                    <Notifications />
+                    <AdminSendNotification />
                   </ProtectedRoute>
                 }
-              /> */}
+              />
 
               {/* SuperAdmin */}
               <Route

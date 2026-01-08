@@ -9,6 +9,8 @@ import certificateReducer from "../features/certificate/certificateSlice";
 import reviewReducer from "../features/review/reviewSlice";
 import assistantReducer from "../features/GeminiAI/Gemini";
 import dashboardReducer from "../features/dashboard/dashboardSlice";
+import notificationsReducer from "../features/notifications/notificationSlice";
+import { initNotificationSocket } from "../sockets/notificationSocket";
 
 export const store = configureStore({
   reducer: {
@@ -22,8 +24,12 @@ export const store = configureStore({
     reviews: reviewReducer,
     assistant: assistantReducer,
     dashboard: dashboardReducer,
+    notifications: notificationsReducer,
   },
 });
+
+// Bootstrap socket listeners outside React components.
+initNotificationSocket(store);
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
