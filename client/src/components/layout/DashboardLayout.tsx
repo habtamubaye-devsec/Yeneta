@@ -24,6 +24,7 @@ import {
 import { GraduationCap, Key } from "lucide-react";
 import GeminiChatbot from "@/components/chatbot/GeminiChatbot";
 import { logout } from "@/features/auth/authSlice";
+import NotificationBell from "@/components/NotificationBell";
 
 const { Header, Sider, Content } = Layout;
 
@@ -104,6 +105,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
           { key: "/admin/courses", icon: <BookOutlined />, label: "Course Management" },
           { key: "/admin/reviews", icon: <StarOutlined />, label: "Review Moderation" },
           { key: "/admin/categories", icon: <FolderOpenOutlined />, label: "Categories" },
+          { key: "/admin/notifications", icon: <BellOutlined />, label: "Notifications" },
           { key: "/superadmin/roles", icon: <UserSwitchOutlined />, label: "Role Management" },
           { key: "/superadmin/settings", icon: <SafetyOutlined />, label: "System Settings" },
         ];
@@ -112,31 +114,27 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     }
   };
 
-  const profileMenu = (
-    <Menu
-      items={[
-        {
-          key: "profile",
-          icon: <UserOutlined />,
-          label: "Profile",
-          onClick: () => navigate(`/${user.role}/profile`),
-        },
-        {
-          key: "settings",
-          icon: <SettingOutlined />,
-          label: "Settings",
-          onClick: () => navigate("/settings"),
-        },
-        { type: "divider" },
-        {
-          key: "logout",
-          icon: <LogoutOutlined />,
-          label: "Logout",
-          onClick: handleLogout,
-        },
-      ]}
-    />
-  );
+  const profileMenuItems = [
+    {
+      key: "profile",
+      icon: <UserOutlined />,
+      label: "Profile",
+      onClick: () => navigate(`/${user.role}/profile`),
+    },
+    {
+      key: "settings",
+      icon: <SettingOutlined />,
+      label: "Settings",
+      onClick: () => navigate("/settings"),
+    },
+    { type: "divider" as const },
+    {
+      key: "logout",
+      icon: <LogoutOutlined />,
+      label: "Logout",
+      onClick: handleLogout,
+    },
+  ];
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
@@ -264,11 +262,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
           />
 
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <Button
-              type="text"
-              icon={<BellOutlined style={{ color: "#1e293b",}} />}
-            />
-            <Dropdown overlay={profileMenu} placement="bottomRight" trigger={["click"]}>
+            <NotificationBell />
+            <Dropdown menu={{ items: profileMenuItems }} placement="bottomRight" trigger={["click"]}>
               <Avatar
                 size="small"
                 style={{
