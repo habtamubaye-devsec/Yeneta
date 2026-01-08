@@ -14,6 +14,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import VerifyAccount from "./pages/VerifyAccount";
 
 // // ✅ Student Pages
 import StudentDashboard from "./pages/student/StudentDashboard";
@@ -98,6 +99,7 @@ const InnerApp = () => {
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/verify" element={<VerifyAccount />} />
 
               {/* Courses */}
               <Route path="/courses" element={<BrowseCourses />} />

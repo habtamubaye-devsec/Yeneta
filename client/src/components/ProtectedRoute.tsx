@@ -19,6 +19,21 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, children 
     return <Navigate to="/login" replace />;
   }
 
+  // Block inactive or unverified accounts
+  if (user && user.status && user.status !== "active") {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user && user.isVerified === false) {
+    return (
+      <Navigate
+        to="/verify"
+        replace
+        state={{ email: user.email, userId: user.id }}
+      />
+    );
+  }
+
   // If role-based protection is used
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {
     return <Navigate to="/unauthorized" replace />;
