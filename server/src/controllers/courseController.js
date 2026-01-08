@@ -3,6 +3,7 @@ import Lesson from "../models/lesson.js"
 import Enrollment from "../models/enrollment.js";
 import Earning from "../models/earning.js";
 import cloudinary from "../utils/cloudinary.js";
+import { sendUserNotification } from "../utils/notificationService.js";
 
 // ✅ Create a new course (with Cloudinary upload)
 const createCourse = async (req, res) => {
@@ -195,6 +196,17 @@ const approveCourse = async (req, res) => {
     course.publishedAt = new Date();
     await course.save();
 
+    try {
+      await sendUserNotification({
+        userId: course.instructor,
+        type: "success",
+        title: "Course approved",
+        message: `Good news! Your course "${course.title}" has been approved and published. Students can now enroll.`,
+      });
+    } catch (notifyErr) {
+      console.error("Failed to send course-approved notification:", notifyErr);
+    }
+
     res.json({
       success: true,
       message: "Course published successfully",
@@ -210,6 +222,7 @@ const approveCourse = async (req, res) => {
 const rejectCourse = async (req, res) => {
   try {
     const { id } = req.params;
+    const { reason } = req.body ?? {};
     const course = await Course.findById(id);
     if (!course) {
       return res.status(404).json({ success: false, message: "Course not found" });
@@ -224,6 +237,18 @@ const rejectCourse = async (req, res) => {
 
     course.status = "rejected";
     await course.save();
+
+    try {
+      const reasonLine = reason ? ` Reason: ${reason}` : "";
+      await sendUserNotification({
+        userId: course.instructor,
+        type: "error",
+        title: "Course rejected",
+        message: `Your course "${course.title}" was rejected by the admin.${reasonLine} You can update the course and submit again for review.`,
+      });
+    } catch (notifyErr) {
+      console.error("Failed to send course-rejected notification:", notifyErr);
+    }
 
     res.json({
       success: true,
