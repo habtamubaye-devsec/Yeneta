@@ -1,9 +1,7 @@
 import { useEffect } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { message } from "antd";
-
-axios.defaults.withCredentials = true; // send cookies automatically
+import { api } from "@/api";
 
 export function useAuthCheck() {
   const navigate = useNavigate();
@@ -11,7 +9,7 @@ export function useAuthCheck() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await axios.get("http://localhost:8000/api/auth/me");
+        const res = await api.get("/api/auth/me");
         console.log(res)
         if (res.data.user.role === "student") navigate("/student");
         else if (res.data.user.role === "instructor") navigate("/instructor");

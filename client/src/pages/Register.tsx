@@ -11,6 +11,8 @@ export default function Register() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
+  const API_ORIGIN = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
+
   const { loading, error } = useAppSelector((state) => state.auth);
 
   // Show messages from Redux
@@ -30,14 +32,18 @@ export default function Register() {
     }
     try {
       const res = await dispatch(registerUser(values)).unwrap();
-      message.success(res.message || "Registration successful. Check your email for the OTP.");
-      navigate("/verify", { state: { email: values.email, userId: res.userId } });
+      message.success(
+        res.message || "Registration successful. Check your email for the OTP.",
+      );
+      navigate("/verify", {
+        state: { email: values.email, userId: res.userId },
+      });
     } catch {}
   };
 
   // OAuth login
   const handleOAuthLogin = (provider: "google" | "github") => {
-    window.location.href = `http://localhost:8000/api/auth/${provider}`;
+    window.location.href = `${API_ORIGIN}/api/auth/${provider}`;
   };
 
   return (

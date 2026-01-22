@@ -14,7 +14,8 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { user, loading, error } = useAppSelector((state: RootState) => state.auth);
+  const { loading, error } = useAppSelector((state: RootState) => state.auth);
+  const API_ORIGIN = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
 
   // // 🔔 Redirect if already authenticated
   // useAuthCheck();
@@ -34,14 +35,17 @@ export default function Login() {
       if (res.user.role === "student") navigate("/student");
       else if (res.user.role === "instructor") navigate("/instructor");
       else if (res.user.role === "admin") navigate("/admin");
-      else if (res.user.role === "superadmin") navigate("/superadmin"); 
+      else if (res.user.role === "superadmin") navigate("/superadmin");
     } catch (err: any) {
       if (err?.needsVerification) {
         dispatch(
-          setPendingVerification({ userId: err.userId, email: err.email || email })
+          setPendingVerification({
+            userId: err.userId,
+            email: err.email || email,
+          }),
         );
         message.warning(
-          err?.message || "Please verify your email before signing in."
+          err?.message || "Please verify your email before signing in.",
         );
         navigate("/verify", {
           state: { email: err.email || email, userId: err.userId },
@@ -57,21 +61,7 @@ export default function Login() {
   // OAuth login
   const handleOAuthLogin = (provider: "google" | "github") => {
     // Opens full page OAuth login
-    window.location.href = `http://localhost:8000/api/auth/${provider}`;
-  };
-
-  // Optional: popup OAuth login
-  const handleOAuthPopup = (provider: "google" | "github") => {
-    const width = 600;
-    const height = 700;
-    const left = window.screen.width / 2 - width / 2;
-    const top = window.screen.height / 2 - height / 2;
-
-    window.open(
-      `http://localhost:8000/api/auth/${provider}`,
-      "OAuthLogin",
-      `width=${width},height=${height},top=${top},left=${left}`
-    );
+    window.location.href = `${API_ORIGIN}/api/auth/${provider}`;
   };
 
   return (
@@ -84,7 +74,9 @@ export default function Login() {
             </div>
           </div>
           <h2 className="text-2xl font-bold">Welcome to LearnHub</h2>
-          <p className="text-gray-500">Sign in to continue your learning journey</p>
+          <p className="text-gray-500">
+            Sign in to continue your learning journey
+          </p>
         </div>
 
         <Form layout="vertical" onFinish={handleSubmit}>
@@ -108,7 +100,13 @@ export default function Login() {
           </Form.Item>
 
           <Form.Item>
-            <Button type="primary" htmlType="submit" block size="large" loading={loading}>
+            <Button
+              type="primary"
+              htmlType="submit"
+              block
+              size="large"
+              loading={loading}
+            >
               Sign In
             </Button>
           </Form.Item>
@@ -135,7 +133,10 @@ export default function Login() {
           </Button>
         </Space>
 
-        <p className="text-sm text-center mt-4" style={{ color: "hsl(215 16% 47%)" }}>
+        <p
+          className="text-sm text-center mt-4"
+          style={{ color: "hsl(215 16% 47%)" }}
+        >
           Don't have an account?{" "}
           <Link
             to="/register"
