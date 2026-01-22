@@ -1,16 +1,16 @@
 // src/redux/slices/certificateSlice.ts
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
+import { api } from "@/api";
 
 // API base URL
-const API_BASE = "http://localhost:8000/api/certificate";
+const API_BASE = "/api/certificate";
 
 // Fetch all certificates for the logged-in user
 export const fetchCertificates = createAsyncThunk(
   "certificates/fetchAll",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await axios.get(`${API_BASE}/my-certificates`, {
+      const res = await api.get(`${API_BASE}/my-certificates`, {
         withCredentials: true,
       });
       return res.data.data; // array of certificates
@@ -26,7 +26,7 @@ export const downloadCertificate = createAsyncThunk(
   "certificates/fetchPdf",
   async (courseId: string, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${API_BASE}/${courseId}/certificate`, {
+      const response = await api.get(`${API_BASE}/${courseId}/certificate`, {
         responseType: "blob",
         withCredentials: true,
       });
@@ -50,7 +50,7 @@ export const downloadCertificateFile = createAsyncThunk(
     const { courseId, filename } = payload;
     try {
       // Call endpoint with download=true so server sets Content-Disposition: attachment
-      const response = await axios.get(`${API_BASE}/${courseId}/certificate?download=true`, {
+      const response = await api.get(`${API_BASE}/${courseId}/certificate?download=true`, {
         responseType: "blob",
         withCredentials: true,
       });

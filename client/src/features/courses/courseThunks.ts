@@ -1,15 +1,23 @@
 // src/redux/course/courseThunks.ts
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
+import { api } from "@/api";
 
-const API_URL = "http://localhost:8000/api/courses"; // update to your backend URL
+const API_URL = "/api/courses";
+
+type CourseFilters = {
+  search?: string;
+  category?: string;
+  level?: string;
+  minPrice?: number;
+  maxPrice?: number;
+};
 
 // ✅ Create Course (with image upload)
 export const createCourse = createAsyncThunk(
   "courses/createCourse",
   async (formData: FormData, { rejectWithValue }) => {
     try {
-      const { data } = await axios.post(`${API_URL}/`, formData, {
+      const { data } = await api.post(`${API_URL}/`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
         withCredentials: true, // ✅ must be OUTSIDE headers
       });
@@ -26,25 +34,17 @@ export const createCourse = createAsyncThunk(
 // ✅ Unified Get / Search / Filter
 export const fetchCourses = createAsyncThunk(
   "courses/fetchCourses",
-  async (
-    filters?: {
-      search?: string;
-      category?: string;
-      level?: string;
-    },
-    { rejectWithValue }
-  ) => {
+  async (filters: CourseFilters | void, { rejectWithValue }) => {
     try {
+      const f: CourseFilters = filters || {};
       const params = new URLSearchParams();
-      if (filters?.search) params.append("search", filters.search);
-      if (filters?.category) params.append("category", filters.category);
-      if (filters?.level) params.append("level", filters.level);
-      if (filters?.minPrice)
-        params.append("minPrice", filters.minPrice.toString());
-      if (filters?.maxPrice)
-        params.append("maxPrice", filters.maxPrice.toString());
+      if (f.search) params.append("search", f.search);
+      if (f.category) params.append("category", f.category);
+      if (f.level) params.append("level", f.level);
+      if (f.minPrice) params.append("minPrice", f.minPrice.toString());
+      if (f.maxPrice) params.append("maxPrice", f.maxPrice.toString());
 
-      const { data } = await axios.get(`${API_URL}?${params.toString()}`);
+      const { data } = await api.get(`${API_URL}?${params.toString()}`);
       return data.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data || "Failed to fetch courses");
@@ -57,8 +57,9 @@ export const getCourseById = createAsyncThunk(
   "courses/getCourseById",
   async (courseId: string, { rejectWithValue }) => {
     try {
-      const { data } = await axios.get(`${API_URL}/${courseId}`);
+      const { data } = await api.get(`${API_URL}/${courseId}`);
       // Normalize backend variations: some endpoints return { data: course } or { course } or course directly
+      console.log("🎯 getCourseById response:", data)
       return data.data ?? data.course ?? data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data || "Course not found");
@@ -76,7 +77,7 @@ export const fetchCoursesByInstructor = createAsyncThunk(
         withCredentials: true,
       };
 
-      const { data } = await axios.get(`${API_URL}/instructor-courses`, config);
+      const { data } = await api.get(`${API_URL}/instructor-courses`, config);
 
       console.log("🎯 Instructor courses response:", data);
 
@@ -99,7 +100,7 @@ export const updateCourse = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      const { data } = await axios.put(`${API_URL}/${id}`, formData, {
+      const { data } = await api.put(`${API_URL}/${id}`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
         withCredentials: true, // ✅ must be inside the same config object
       });
@@ -118,7 +119,7 @@ export const requestTogglePublish = createAsyncThunk(
     try {
       const token = localStorage.getItem("token");
 
-      const res = await axios.patch(
+      const res = await api.patch(
         `${API_URL}/${courseId}/publish`,
         {}, // no body needed
         {
@@ -147,7 +148,7 @@ export const deleteCourse = createAsyncThunk(
   "courses/deleteCourse",
   async (id: string, { rejectWithValue }) => {
     try {
-      await axios.delete(`${API_URL}/${id}`, { withCredentials: true });
+      await api.delete(`${API_URL}/${id}`, { withCredentials: true });
       return id;
     } catch (error: any) {
       return rejectWithValue(error.response?.data || "Failed to delete course");
@@ -168,7 +169,7 @@ export const getAllCoursesForAdmin = createAsyncThunk(
         throw new Error("Unauthorized: No token found");
       }
 
-      const res = await axios.get(`${API_URL}/admin/all-courses`, {
+      const res = await api.get(`${API_URL}/admin/all-courses`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -200,7 +201,7 @@ export const approveCourse = createAsyncThunk(
       }
 
       // ✅ Corrected placement of headers/config
-      const res = await axios.patch(
+      const res = await api.patch(
         `${API_URL}/${courseId}/approve`,
         {}, // empty body
         {
@@ -233,7 +234,7 @@ export const rejectCourse = createAsyncThunk(
       }
 
       // ✅ Corrected placement of headers/config
-      const res = await axios.patch(`${API_URL}/${courseId}/reject`, {}, {
+      const res = await api.patch(`${API_URL}/${courseId}/reject`, {}, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
