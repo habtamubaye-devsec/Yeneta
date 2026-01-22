@@ -1,5 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
+import { api } from "@/api";
 
 export interface Category {
   _id?: string;
@@ -8,14 +8,14 @@ export interface Category {
   subcategories?: string[];
 }
 
-const API_URL = "http://localhost:8000/api/categories";
+const API_URL = "/api/categories";
 
 // ✅ Fetch all categories
 export const fetchCategories = createAsyncThunk<Category[]>(
   "categories/fetchAll",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get(API_URL);
+      const response = await api.get(API_URL);
       return response.data.data; // { success, data }
     } catch (err: any) {
       return rejectWithValue(err.response?.data?.message || "Failed to fetch categories");
@@ -29,7 +29,7 @@ export const fetchCategoryById = createAsyncThunk<Category, string>(
   async (id, { rejectWithValue }) => {
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.get(`${API_URL}/${id}`, {
+      const response = await api.get(`${API_URL}/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       return response.data.data;
@@ -45,7 +45,7 @@ export const createCategory = createAsyncThunk<Category, Category>(
   async (categoryData, { rejectWithValue }) => {
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.post(API_URL, categoryData, {
+      const response = await api.post(API_URL, categoryData, {
         headers: { Authorization: `Bearer ${token}` },
         withCredentials: true,
       });
@@ -64,7 +64,7 @@ export const updateCategory = createAsyncThunk<
 >("categories/update", async ({ id, updates }, { rejectWithValue }) => {
   try {
     const token = localStorage.getItem("token");
-    const response = await axios.patch(`${API_URL}/${id}`, updates, {
+    const response = await api.patch(`${API_URL}/${id}`, updates, {
       headers: { Authorization: `Bearer ${token}` },
         withCredentials: true,
     });
@@ -80,7 +80,7 @@ export const deleteCategory = createAsyncThunk<string, string>(
   async (id, { rejectWithValue }) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`${API_URL}/${id}`, {
+      await api.delete(`${API_URL}/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
         withCredentials: true,
       });

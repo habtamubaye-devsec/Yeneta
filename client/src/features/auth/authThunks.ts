@@ -1,5 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
+import { api } from "@/api";
 
 // REGISTER STUDENT
 export const registerUser = createAsyncThunk(
@@ -9,11 +9,12 @@ export const registerUser = createAsyncThunk(
     thunkAPI
   ) => {
     try {
-      const res = await axios.post("http://localhost:8000/api/auth/register", {
+      const res = await api.post("/api/auth/register", {
         name,
         email,
         password,
       });
+      
       return res.data; // expects { message, userId }
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.response?.data?.message || "Registration failed");
@@ -29,7 +30,7 @@ export const verifyOtp = createAsyncThunk(
     thunkAPI
   ) => {
     try {
-      const res = await axios.post("http://localhost:8000/api/auth/verify-otp", {
+      const res = await api.post("/api/auth/verify-otp", {
         userId,
         email,
         otp,
@@ -48,7 +49,7 @@ export const resendOtp = createAsyncThunk(
   "auth/resendOtp",
   async ({ email }: { email: string }, thunkAPI) => {
     try {
-      const res = await axios.post("http://localhost:8000/api/auth/resend-otp", { email });
+      const res = await api.post("/api/auth/resend-otp", { email });
       return res.data; // expects { message }
     } catch (error: any) {
       return thunkAPI.rejectWithValue(
@@ -63,10 +64,10 @@ export const loginUser = createAsyncThunk(
   "auth/loginUser",
   async ({ email, password }: { email: string; password: string }, thunkAPI) => {
     try {
-      const res = await axios.post(
-        "http://localhost:8000/api/auth/login",
+      const res = await api.post(
+        "/api/auth/login",
         { email, password },
-        { withCredentials: true } // 👈 send/receive cookie
+        { withCredentials: true } // ok (api already uses withCredentials)
       );
       return res.data; // { message, user }
     } catch (error: any) {
@@ -83,7 +84,7 @@ export const fetchCurrentUser = createAsyncThunk(
   "auth/fetchCurrentUser",
   async (_, thunkAPI) => {
     try {
-      const res = await axios.get("http://localhost:8000/api/auth/me", {
+      const res = await api.get("/api/auth/me", {
         withCredentials: true, // 👈 include cookie
       });
       return res.data.user;
@@ -95,5 +96,5 @@ export const fetchCurrentUser = createAsyncThunk(
 
 //LOGOUT
 export const logoutUser = createAsyncThunk("auth/logoutUser", async () => {
-  await axios.post("http://localhost:8000/api/auth/logout", {}, { withCredentials: true });
+  await api.post("/api/auth/logout", {}, { withCredentials: true });
 });
