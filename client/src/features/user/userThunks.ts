@@ -1,8 +1,8 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
+import { api } from "@/api";
 import { message } from "antd";
 
-const API_URL = "http://localhost:8000/api/user"
+const API_URL = "/api/user"
 
 // ✅ Fetch all users
 export const fetchUsers = createAsyncThunk(
@@ -12,7 +12,7 @@ export const fetchUsers = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      const response = await axios.get(API_URL, {
+      const response = await api.get(API_URL, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }, withCredentials: true,
         params: role ? { role } : undefined,
       });
@@ -35,7 +35,7 @@ export const updateUserRole = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      const res = await axios.patch(
+      const res = await api.patch(
         `${API_URL}/${userId}/role`,
         { role },
         {
@@ -56,7 +56,7 @@ export const banAndUnbanUser = createAsyncThunk(
   "users/banAndUnbanUser",
   async ({ userId, status }: { userId: string; status: "banned" | "active" }, { rejectWithValue }) => {
     try {
-      const res = await axios.patch(
+      const res = await api.patch(
         `${API_URL}/${userId}/status`,
         { status },
         { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }, withCredentials: true }
@@ -73,7 +73,7 @@ export const deleteUser = createAsyncThunk(
   "users/deleteUser",
   async (userId: string, { rejectWithValue }) => { 
     try {
-      const res = await axios.delete(`${API_URL}/${userId}`, {
+      await api.delete(`${API_URL}/${userId}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         withCredentials: true,
       });
@@ -90,7 +90,7 @@ export const updateUserPassword = createAsyncThunk(
   "user/updateUserPassword",
   async (passwordData: { currentPassword: string; newPassword: string; confirmPassword: string }, { rejectWithValue }) => {
     try {
-      const res = await axios.patch(`${API_URL}/current/password`, passwordData, {
+      const res = await api.patch(`${API_URL}/current/password`, passwordData, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         withCredentials: true,
       });
@@ -108,7 +108,7 @@ export const updateUserProfile = createAsyncThunk(
   "user/updateUserProfile",
   async (formData: FormData, { rejectWithValue }) => {
     try {
-      const { data } = await axios.patch(`${API_URL}/current/updateProfile`, formData, {
+      const { data } = await api.patch(`${API_URL}/current/updateProfile`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
         withCredentials: true,
       });
@@ -124,7 +124,7 @@ export const requestInstructor = createAsyncThunk(
   "user/requestInstructor",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.patch(
+      const response = await api.patch(
         `${API_URL}/request-instructor`,
         {}, // no body needed
         { withCredentials: true } // send cookies (auth)
@@ -143,7 +143,7 @@ export const fetchInstructorRequests = createAsyncThunk(
   "user/fetchInstructorRequests",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${API_URL}/instructor-requests`, {
+      const response = await api.get(`${API_URL}/instructor-requests`, {
         withCredentials: true,
       });
       return response.data.data; // ✅ matches your backend shape
@@ -160,7 +160,7 @@ export const approveInstructor = createAsyncThunk(
   "user/approveInstructor",
   async (userId: string, { rejectWithValue }) => {
     try {
-      const response = await axios.patch(
+      const response = await api.patch(
         `${API_URL}/${userId}/approve-instructor`,
         {},
         { withCredentials: true }
@@ -179,7 +179,7 @@ export const rejectInstructorRequest = createAsyncThunk(
   "user/rejectInstructorRequest",
   async (userId: string, { rejectWithValue }) => {
     try {
-      const response = await axios.patch(
+      const response = await api.patch(
         `${API_URL}/${userId}/reject-instructor`,
         {},
         { withCredentials: true }

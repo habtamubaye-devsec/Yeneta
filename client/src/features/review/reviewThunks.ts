@@ -1,8 +1,8 @@
 // src/features/review/reviewThunks.ts
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
+import { api } from "@/api";
 
-const API_BASE_URL = "http://localhost:8000/api/courses";
+const API_BASE_URL = "/api/courses";
 
 //
 // 📌 1. Get all reviews for a course
@@ -11,7 +11,7 @@ export const fetchCourseReviews = createAsyncThunk(
   "reviews/fetchCourseReviews",
   async (courseId: string, { rejectWithValue }) => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/${courseId}/reviews`, {
+      const res = await api.get(`${API_BASE_URL}/${courseId}/reviews`, {
         withCredentials: true,
       });
       return res.data.data;
@@ -35,7 +35,7 @@ export const addReview = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      const res = await axios.post(
+      const res = await api.post(
         `${API_BASE_URL}/${courseId}/review`,
         { rating, comment },
         { withCredentials: true }
@@ -54,7 +54,7 @@ export const fetchMyReviews = createAsyncThunk(
   "reviews/fetchMyReviews",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/review/me`, {
+      const res = await api.get(`${API_BASE_URL}/review/me`, {
         withCredentials: true,
       });
       return res.data.data; 
@@ -71,7 +71,7 @@ export const updateReview = createAsyncThunk(
   "reviews/updateReview",
   async ({ id, rating, comment }: any, thunkAPI) => {
     try {
-      const res = await axios.patch(
+      const res = await api.patch(
         `${API_BASE_URL}/review/${id}`,
         { rating, comment },
         { withCredentials: true }
@@ -90,9 +90,7 @@ export const deleteReview = createAsyncThunk(
   "reviews/deleteReview",
   async (id: string, thunkAPI) => {
     try {
-      const res = await axios.delete(`${API_BASE_URL}/review/${id}`, {
-        withCredentials: true,
-      });
+      await api.delete(`${API_BASE_URL}/review/${id}`, { withCredentials: true });
 
       return id; // returning deleted review id
     } catch (err: any) {
@@ -108,7 +106,7 @@ export const fetchReviewSummaryForCourses = createAsyncThunk(
   "reviews/fetchReviewSummaryForCourses",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/review/summary`, {
+      const res = await api.get(`${API_BASE_URL}/review/summary`, {
         withCredentials: true,
       });
       return res.data.data;
@@ -125,7 +123,7 @@ export const fetchReviewSummaryForSingleCourse = createAsyncThunk(
   "reviews/fetchReviewSummaryForSingleCourse",
   async (courseId: string, { rejectWithValue }) => {
     try {
-      const res = await axios.get(
+      const res = await api.get(
         `${API_BASE_URL}/review/summary/${courseId}`,
         { withCredentials: true }
       );
@@ -143,7 +141,7 @@ export const fetchInstructorReviews = createAsyncThunk(
   "reviews/fetchInstructorReviews",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/review/instructor`, {
+      const res = await api.get(`${API_BASE_URL}/review/instructor`, {
         withCredentials: true,
       });
       return res.data.data;
@@ -160,7 +158,7 @@ export const fetchReviewForAdmin = createAsyncThunk(
   "reviews/fetchReviewForAdmin",
   async (_, { rejectWithValue }) => { 
     try { 
-      const res = await axios.get(
+      const res = await api.get(
         `${API_BASE_URL}/admin/review`,
         { withCredentials: true }
       );
@@ -182,7 +180,7 @@ export const deleteReviewAdmin = createAsyncThunk(
   "reviews/deleteReviewAdmin",
   async (id: string, { rejectWithValue }) => {
     try {
-      const res = await axios.delete(
+      await api.delete(
         `${API_BASE_URL}/admin/review/${id}`,
         { withCredentials: true }
       );

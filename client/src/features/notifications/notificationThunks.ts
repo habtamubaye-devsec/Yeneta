@@ -1,10 +1,10 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
 import type { RootState } from "@/app/store";
 import type { AdminSendPayload, Notification } from "./types";
+import { api } from "@/api";
 
-const API_BASE = "http://localhost:8000/api/notifications";
-const ADMIN_API_BASE = "http://localhost:8000/api/admin/notifications";
+const API_BASE = "/api/notifications";
+const ADMIN_API_BASE = "/api/admin/notifications";
 
 const getErrorMessage = (error: unknown, fallback: string) => {
   const err = error as any;
@@ -19,7 +19,7 @@ export const fetchNotifications = createAsyncThunk<
   "notifications/fetch",
   async (page, { rejectWithValue }) => {
     try {
-      const res = await axios.get(`${API_BASE}?page=${page}`, {
+      const res = await api.get(`${API_BASE}?page=${page}`, {
         withCredentials: true,
       });
       return { page, items: (res.data ?? []) as Notification[] };
@@ -37,7 +37,7 @@ export const markNotificationAsRead = createAsyncThunk<
   "notifications/markAsRead",
   async (id, { rejectWithValue }) => {
     try {
-      const res = await axios.patch(`${API_BASE}/${id}/read`, {}, { withCredentials: true });
+      const res = await api.patch(`${API_BASE}/${id}/read`, {}, { withCredentials: true });
       return res.data as Notification;
     } catch (error) {
       return rejectWithValue(getErrorMessage(error, "Failed to mark notification as read"));
@@ -60,7 +60,7 @@ export const markAllAsRead = createAsyncThunk<
 
       await Promise.all(
         unread.map((n) =>
-          axios.patch(`${API_BASE}/${n._id}/read`, {}, { withCredentials: true })
+          api.patch(`${API_BASE}/${n._id}/read`, {}, { withCredentials: true })
         )
       );
 
@@ -82,7 +82,7 @@ export const sendRoleNotification = createAsyncThunk<
     // Current backend in this workspace: POST /api/notifications/role
     // We try the spec endpoint first, then fall back for compatibility.
     try {
-      const res = await axios.post(`${ADMIN_API_BASE}/role`, payload, {
+      const res = await api.post(`${ADMIN_API_BASE}/role`, payload, {
         withCredentials: true,
       });
       return res.data ?? {};
@@ -90,7 +90,7 @@ export const sendRoleNotification = createAsyncThunk<
       const status = error?.response?.status;
       if (status === 404) {
         try {
-          const res = await axios.post(`${API_BASE}/role`, payload, {
+          const res = await api.post(`${API_BASE}/role`, payload, {
             withCredentials: true,
           });
           return res.data ?? {};
