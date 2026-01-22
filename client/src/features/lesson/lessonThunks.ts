@@ -1,15 +1,15 @@
 // src/features/lesson/lessonThunks.ts
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
+import { api } from "@/api";
 
-const API_BASE = "http://localhost:8000/api/courses";
+const API_BASE = "/api/courses";
 
 // ✅ Fetch all lessons by course
 export const fetchLessons = createAsyncThunk(
   "lessons/fetchAll",
   async (courseId: string, { rejectWithValue }) => {
     try {
-      const res = await axios.get(`${API_BASE}/${courseId}/lessons`, {
+      const res = await api.get(`${API_BASE}/${courseId}/lessons`, {
         withCredentials: true, // if you're using session or cookies
       });
       return res.data.lessons || [];
@@ -31,7 +31,7 @@ export const createLesson = createAsyncThunk(
     try {
       if (!courseId) throw new Error("Missing course ID");
       console.log("📦 Creating lesson with FormData:", formData);
-      const res = await axios.post(`${API_BASE}/${courseId}/lessons`, formData, {
+      const res = await api.post(`${API_BASE}/${courseId}/lessons`, formData, {
         withCredentials: true,
       });
       console.log("❇️ Create lesson response:", res.data);
@@ -54,7 +54,7 @@ export const updateLesson = createAsyncThunk(
   ) => {
     try {
       if (!courseId) throw new Error("Missing course ID");
-      const res = await axios.put(`${API_BASE}/${courseId}/lessons/${id}`, lessonData, {
+      const res = await api.put(`${API_BASE}/${courseId}/lessons/${id}`, lessonData, {
         withCredentials: true,
       });
       return res.data.lesson;
@@ -73,7 +73,7 @@ export const deleteLesson = createAsyncThunk(
   ) => {
     try {
       if (!courseId) throw new Error("Missing course ID");
-      await axios.delete(`${API_BASE}/${courseId}/lessons/${id}`, { withCredentials: true });
+      await api.delete(`${API_BASE}/${courseId}/lessons/${id}`, { withCredentials: true });
       return id;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || "Failed to delete lesson");

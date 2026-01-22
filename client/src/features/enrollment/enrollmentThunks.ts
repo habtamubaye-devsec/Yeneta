@@ -1,7 +1,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
+import { api } from "@/api";
 
-const API_BASE = "http://localhost:8000/api/enrollment";
+const API_BASE = "/api/enrollment";
 
 // Create Stripe checkout session
 export const createCheckoutSession = createAsyncThunk<
@@ -12,7 +12,7 @@ export const createCheckoutSession = createAsyncThunk<
   "enrollment/createCheckout",
   async (courseId, { rejectWithValue }) => {
     try {
-      const res = await axios.post(
+      const res = await api.post(
         `${API_BASE}/checkout/${courseId}`,
         {},
         { withCredentials: true }
@@ -35,7 +35,7 @@ export const enrollInCourse = createAsyncThunk<
   "enrollment/enroll",
   async (courseId, { rejectWithValue }) => {
     try {
-      const res = await axios.post(
+      const res = await api.post(
         `${API_BASE}/enroll/${courseId}`,
         {},
         { withCredentials: true }
@@ -58,7 +58,7 @@ export const fetchMyEnrollments = createAsyncThunk<
   "enrollment/fetchMy",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await axios.get(`${API_BASE}/my`, { withCredentials: true });
+      const res = await api.get(`${API_BASE}/my`, { withCredentials: true });
       return res.data.data || [];
     } catch (err: any) {
       return rejectWithValue(
@@ -77,7 +77,7 @@ export const fetchEnrollmentByCourse = createAsyncThunk<
   "enrollment/fetchEnrollmentByCourse",
   async (courseId, { rejectWithValue }) => {
     try {
-      const res = await axios.get(`${API_BASE}/course/${courseId}`, {
+      const res = await api.get(`${API_BASE}/course/${courseId}`, {
         withCredentials: true,
       });
       const data = res.data.data;
@@ -101,7 +101,7 @@ export const getEnrollmentsLengthByCourse = createAsyncThunk<
   async (courseId, { rejectWithValue }) => {
     try {
       const token = localStorage.getItem("token"); // optional
-      const { data } = await axios.get(`${API_BASE}/length/${courseId}`, {
+      const { data } = await api.get(`${API_BASE}/length/${courseId}`, {
         headers: { Authorization: `Bearer ${token}` },
         withCredentials: true,
       });
@@ -123,7 +123,7 @@ export const updateLessonProgress = createAsyncThunk<
   "enrollment/updateProgress",
   async ({ courseId, lessonId }, { rejectWithValue }) => {
     try {
-      const res = await axios.patch(
+      const res = await api.patch(
         `${API_BASE}/${courseId}/progress`,
         { lessonId },
         { withCredentials: true }

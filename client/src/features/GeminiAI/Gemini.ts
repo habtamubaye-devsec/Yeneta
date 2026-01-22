@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
+import { api } from "@/api";
 
 // ========================
 // THUNK: Ask AI Assistant
@@ -8,8 +8,8 @@ export const askAssistantThunk = createAsyncThunk(
   "assistant/ask",
   async (message: string, { rejectWithValue }) => {
     try {
-      const res = await axios.post(
-        "http://localhost:8000/api/gemini/ask",
+      const res = await api.post(
+        "/api/gemini/ask",
         { prompt: message },
         { withCredentials: true }
       );
