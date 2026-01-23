@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Spin, Typography, Alert } from 'antd';
+import { api } from '@/api';
 
 const { Text } = Typography;
 
@@ -29,7 +29,7 @@ export default function EnrollmentSuccess() {
     const tryFinalizeFromSession = async () => {
       if (!sessionId) return;
       try {
-        await axios.post('http://localhost:8000/api/enrollment/webhook-test', { sessionId }, { withCredentials: true });
+        await api.post('/api/enrollment/webhook-test', { sessionId });
         // proceed — polling below will detect the created enrollment quickly
       } catch (err) {
         // ignore; polling will still run
@@ -44,13 +44,13 @@ export default function EnrollmentSuccess() {
       const timeout = 30000; // 30s
       while (!cancelled && Date.now() - start < timeout) {
         try {
-          const res = await axios.get('http://localhost:8000/api/enrollment/my', { withCredentials: true });
+          const res = await api.get('/api/enrollment/my');
           const enrollments = res.data.data || [];
           const found = enrollments.find((e: any) => (e.course && (e.course._id === courseId || e.course === courseId)) || (e.course?._id === courseId));
           if (found) {
             // enrollment exists — fetch the course to get first lesson
             try {
-              const courseResp = await axios.get(`http://localhost:8000/api/courses/${courseId}`);
+              const courseResp = await api.get(`/api/courses/${courseId}`);
               const course = courseResp.data.data ?? courseResp.data.course ?? courseResp.data;
               const firstLesson = (course.lessons && course.lessons[0]) || null;
               if (firstLesson && firstLesson._id) {

@@ -20,7 +20,7 @@ import {
   updateLessonProgress,
   fetchMyEnrollments,
 } from "@/features/enrollment/enrollmentThunks";
-import axios from "axios";
+import { api } from "@/api";
 
 export default function LessonPlayer() {
   const { courseId, lessonId } = useParams();
@@ -57,10 +57,7 @@ export default function LessonPlayer() {
 
     const loadProgress = async () => {
       try {
-        const progRes = await axios.get(
-          `http://localhost:8000/api/enrollment/${courseId}/progress`,
-          { withCredentials: true }
-        );
+        const progRes = await api.get(`/api/enrollment/${courseId}/progress`);
         const completed = progRes.data.data || [];
         setCompletedLessons(completed.map((c: any) => String(c._id ?? c)));
       } catch {
