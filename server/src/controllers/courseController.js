@@ -446,6 +446,7 @@ const getCourseById = async (req, res) => {
       course: course._id,
       status: "active",
     });
+    console.log(`Course ${course} has ${enrolledCount} active enrollments.`);
 
     res.json({
       success: true,

@@ -1,16 +1,20 @@
-  import User from "../models/userModel.js";
-  import asyncHandler from "express-async-handler";
-  import crypto from "crypto";
-  import bcrypt from "bcrypt";
-  import jwt from "jsonwebtoken";
-  import { sendVerificationEmail } from "../utils/verificationEmail.js";
+import User from "../models/userModel.js";
+import asyncHandler from "express-async-handler";
+import crypto from "crypto";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import { sendVerificationEmail } from "../utils/verificationEmail.js";
+
+const ADMIN_SUPPORT_EMAIL = "habtamubaye2127@gmail.com";
+const BANNED_MESSAGE =
+  `you are banned from the learn huub and talk to admin by this email ${ADMIN_SUPPORT_EMAIL}`;
 
 // 📌 Generate JWT
 const generateToken = (user) => {
   return jwt.sign(
     { id: user._id, email: user.email, role: user.role },
     process.env.JWT_SECRET,
-    { expiresIn: "3d" }
+    { expiresIn: "3d" },
   );
 };
 
@@ -25,7 +29,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   const existingUser = await User.findOne({ email });
   if (existingUser) {
-    res.status(400).json({message: "User already exists"});
+    res.status(400).json({ message: "User already exists" });
     throw new Error("User already exists");
   }
 
@@ -54,7 +58,6 @@ const registerUser = asyncHandler(async (req, res) => {
 // 🔑 Verify OTP
 const verifyOtp = asyncHandler(async (req, res) => {
   const { userId, email, otp } = req.body;
-
   // Allow verification using either userId or email so users can recover after refresh
   let user = null;
   if (userId) {
@@ -64,9 +67,11 @@ const verifyOtp = asyncHandler(async (req, res) => {
   }
 
   if (!user) return res.status(404).json({ message: "User not found" });
-  if (user.isVerified) return res.status(400).json({ message: "Already verified" });
+  if (user.isVerified)
+    return res.status(400).json({ message: "Already verified" });
   if (user.otp !== otp) return res.status(400).json({ message: "Invalid OTP" });
-  if (user.otpExpiry < Date.now()) return res.status(400).json({ message: "OTP expired" });
+  if (user.otpExpiry < Date.now())
+    return res.status(400).json({ message: "OTP expired" });
 
   user.isVerified = true;
   user.otp = null;
@@ -79,14 +84,15 @@ const verifyOtp = asyncHandler(async (req, res) => {
 // 🔁 Resend OTP
 const resendOtp = asyncHandler(async (req, res) => {
   const { email } = req.body;
-  
+
   if (!email) {
     return res.status(400).json({ message: "Email is required" });
   }
 
   const user = await User.findOne({ email });
   if (!user) return res.status(404).json({ message: "User not found" });
-  if (user.isVerified) return res.status(400).json({ message: "Already verified" });
+  if (user.isVerified)
+    return res.status(400).json({ message: "Already verified" });
 
   const otp = crypto.randomInt(100000, 999999).toString();
   user.otp = otp;
@@ -101,15 +107,18 @@ const resendOtp = asyncHandler(async (req, res) => {
 // 🔐 Login
 const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
+  console.log("CORS Origins:", process.env.CORS_ORIGIN);
 
   if (!email || !password)
     return res.status(400).json({ message: "All input is mandatory" });
 
   const user = await User.findOne({ email });
-  if (!user) return res.status(401).json({ message: "Invalid email or password" });
+  if (!user)
+    return res.status(401).json({ message: "Invalid email or password" });
 
   const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) return res.status(401).json({ message: "Invalid email or password" });
+  if (!isMatch)
+    return res.status(401).json({ message: "Invalid email or password" });
 
   if (!user.isVerified) {
     // Refresh OTP to ensure the user always has a valid code when attempting login
@@ -121,7 +130,8 @@ const login = asyncHandler(async (req, res) => {
     await sendVerificationEmail({ to: user.email, name: user.name, otp });
 
     return res.status(403).json({
-      message: "Please verify your email before logging in. A new code has been sent.",
+      message:
+        "Please verify your email before logging in. A new code has been sent.",
       needsVerification: true,
       userId: user._id,
       email: user.email,
@@ -130,8 +140,10 @@ const login = asyncHandler(async (req, res) => {
 
   if (user.status !== "active") {
     return res.status(403).json({
-      message: "Your account is not active. Please contact support.",
+      message: BANNED_MESSAGE,
       accountStatus: user.status,
+      adminEmail: ADMIN_SUPPORT_EMAIL,
+      banned: true,
     });
   }
 
@@ -177,6 +189,16 @@ const me = asyncHandler(async (req, res) => {
     const user = await User.findById(decoded.id).select("-password");
     if (!user) {
       return res.status(404).json({ message: "User not found" });
+      
+    }
+
+    if (user.status && user.status !== "active") {
+      return res.status(403).json({
+        message: BANNED_MESSAGE,
+        accountStatus: user.status,
+        adminEmail: ADMIN_SUPPORT_EMAIL,
+        banned: true,
+      });
     }
 
     res.status(200).json({ user });
@@ -199,4 +221,3 @@ const logout = asyncHandler(async (req, res) => {
 });
 
 export { registerUser, verifyOtp, resendOtp, login, me, logout };
-// Auto change for Sun Oct 20 2024 03:00:00 GMT+0300 (East Africa Time)

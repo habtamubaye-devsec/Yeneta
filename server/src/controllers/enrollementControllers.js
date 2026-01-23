@@ -2,6 +2,11 @@ import Stripe from "stripe";
 import Enrollment from "../models/enrollment.js";
 import Course from "../models/course.js";
 import { sendUserNotification } from "../utils/notificationService.js";
+import User from "../models/userModel.js";
+import {
+  sendCourseCompletedCertificateEmail,
+  sendEnrollmentConfirmedEmail,
+} from "../utils/courseEmails.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -82,6 +87,7 @@ export const handleStripeWebhook = async (req, res) => {
       const existing = await Enrollment.findOne({ user: userId, course: courseId });
       if (!existing) {
         const course = await Course.findById(courseId);
+        const user = await User.findById(userId).select("name email");
         const enrollment = await Enrollment.create({
           user: userId,
           course: courseId,
@@ -92,6 +98,24 @@ export const handleStripeWebhook = async (req, res) => {
           completedLessons: [],
           completed: "pending",
         });
+
+        // Email: enrollment confirmed
+        try {
+          if (user?.email) {
+            const dashboardUrl = process.env.FRONTEND_URL
+              ? `${process.env.FRONTEND_URL}/student/mycourses`
+              : undefined;
+
+            await sendEnrollmentConfirmedEmail({
+              to: user.email,
+              name: user.name,
+              courseTitle: course.title,
+              dashboardUrl,
+            });
+          }
+        } catch (mailErr) {
+          console.error("Failed to send enrollment email (webhook):", mailErr);
+        }
 
         try {
           await sendUserNotification({
@@ -145,6 +169,8 @@ export const webhookTest = async (req, res) => {
 
     const existing = await Enrollment.findOne({ user: userId, course: courseId });
     if (existing) return res.status(200).json({ success: true, message: "Already enrolled" });
+
+    const user = await User.findById(userId).select("name email");
    
     const enrollment = await Enrollment.create({
       user: userId,
@@ -153,6 +179,24 @@ export const webhookTest = async (req, res) => {
       pricePaid: course.price,
       completedLessons: [],
     });
+
+    // Email: enrollment confirmed
+    try {
+      if (user?.email) {
+        const dashboardUrl = process.env.FRONTEND_URL
+          ? `${process.env.FRONTEND_URL}/student/mycourses`
+          : undefined;
+
+        await sendEnrollmentConfirmedEmail({
+          to: user.email,
+          name: user.name,
+          courseTitle: course.title,
+          dashboardUrl,
+        });
+      }
+    } catch (mailErr) {
+      console.error("Failed to send enrollment email (webhook-test):", mailErr);
+    }
 
     try {
       await sendUserNotification({
@@ -210,6 +254,24 @@ export const enrollInCourse = async (req, res) => {
       progress: 0,
       completedLessons: [],
     });
+
+    // Email: enrollment confirmed
+    try {
+      if (req.user?.email) {
+        const dashboardUrl = process.env.FRONTEND_URL
+          ? `${process.env.FRONTEND_URL}/student/mycourses`
+          : undefined;
+
+        await sendEnrollmentConfirmedEmail({
+          to: req.user.email,
+          name: req.user.name,
+          courseTitle: course.title,
+          dashboardUrl,
+        });
+      }
+    } catch (mailErr) {
+      console.error("Failed to send enrollment email (manual enroll):", mailErr);
+    }
 
     try {
       await sendUserNotification({
@@ -360,6 +422,36 @@ export const updateLessonProgress = async (req, res) => {
           });
         } catch (notifyErr) {
           console.error("Failed to send course-completed notification:", notifyErr);
+        }
+
+        // Email: course completed + attach certificate PDF
+        try {
+          // populate everything needed for the PDF
+          const fullEnrollment = await Enrollment.findById(enrollment._id)
+            .populate("course")
+            .populate("instructor")
+            .populate("user");
+
+          const userEmail = req.user?.email || fullEnrollment?.user?.email;
+          const userName = req.user?.name || fullEnrollment?.user?.name;
+          const ct = fullEnrollment?.course?.title || enrollment.course?.title;
+
+          // Link for convenience (still requires login cookie)
+          const certificateUrl = process.env.FRONTEND_URL
+            ? `${process.env.FRONTEND_URL}/certificates`
+            : undefined;
+
+          if (userEmail && fullEnrollment?.course && fullEnrollment?.user) {
+            await sendCourseCompletedCertificateEmail({
+              to: userEmail,
+              name: userName,
+              courseTitle: ct,
+              certificateUrl,
+              enrollment: fullEnrollment,
+            });
+          }
+        } catch (mailErr) {
+          console.error("Failed to send course-completed certificate email:", mailErr);
         }
       }
     } else {
