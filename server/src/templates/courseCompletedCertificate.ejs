@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= appName || 'Yeneta' %> - Certificate</title>
+  </head>
+  <body style="margin:0;padding:0;background:#f6f7fb;">
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
+      Your certificate for <%= courseTitle %> is ready.
+    </div>
+
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;background:#f6f7fb;">
+      <tr>
+        <td align="center" style="padding:28px 12px;">
+          <table role="presentation" cellpadding="0" cellspacing="0" width="560" style="border-collapse:collapse;max-width:560px;width:100%;">
+            <tr>
+              <td style="padding:0 4px 14px 4px;">
+                <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;">
+                  <tr>
+                    <td align="left" style="font-family:Arial,Helvetica,sans-serif;">
+                      <% if (logoCid) { %>
+                        <img src="cid:<%= logoCid %>" alt="<%= appName || 'Yeneta' %>" width="120" style="display:block;border:0;outline:none;text-decoration:none;height:auto;max-width:120px;" />
+                      <% } else { %>
+                        <div style="font-size:18px;font-weight:700;color:#111827;"><%= appName || 'Yeneta' %></div>
+                      <% } %>
+                    </td>
+                    <td align="right" style="font-family:Arial,Helvetica,sans-serif;">
+                      <span style="display:inline-block;padding:6px 10px;border-radius:999px;background:#fef9c3;color:#854d0e;font-size:12px;font-weight:700;">
+                        CERTIFICATE
+                      </span>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb;">
+                <div style="background:linear-gradient(135deg,#7c3aed 0%,#2563eb 100%);padding:18px 18px;">
+                  <div style="font-family:Arial,Helvetica,sans-serif;color:#ffffff;font-size:18px;font-weight:800;line-height:1.2;margin:0;">
+                    Congratulations — course completed!
+                  </div>
+                  <div style="font-family:Arial,Helvetica,sans-serif;color:rgba(255,255,255,.9);font-size:13px;line-height:1.6;margin:6px 0 0 0;">
+                    Your certificate is attached as a PDF.
+                  </div>
+                </div>
+
+                <div style="padding:18px 18px 20px 18px;">
+                  <div style="font-family:Arial,Helvetica,sans-serif;color:#111827;font-size:14px;line-height:1.6;margin:0 0 10px 0;">
+                    Hi <%= (name && String(name).trim()) ? name : 'there' %>,
+                  </div>
+
+                  <div style="font-family:Arial,Helvetica,sans-serif;color:#374151;font-size:14px;line-height:1.7;margin:0 0 14px 0;">
+                    You successfully completed <strong><%= courseTitle %></strong>. Your certificate is attached.
+                  </div>
+
+                  <% if (certificateUrl) { %>
+                    <div style="text-align:center;margin:16px 0 10px 0;">
+                      <a href="<%= certificateUrl %>" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-family:Arial,Helvetica,sans-serif;font-weight:700;font-size:14px;padding:12px 16px;border-radius:12px;">
+                        Download certificate
+                      </a>
+                    </div>
+                  <% } %>
+
+                  <div style="margin-top:16px;border-top:1px solid #eef2f7;padding-top:14px;font-family:Arial,Helvetica,sans-serif;color:#9ca3af;font-size:12px;line-height:1.6;">
+                    If you have any issues opening the PDF, reply to this email.
+                  </div>
+                </div>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:14px 6px 0 6px;">
+                <div style="font-family:Arial,Helvetica,sans-serif;color:#9ca3af;font-size:12px;line-height:1.6;">
+                  © <%= new Date().getFullYear() %> <%= appName || 'Yeneta' %>. All rights reserved.
+                </div>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

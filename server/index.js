@@ -92,10 +92,6 @@ app.use("/api/notifications", notication);
 
 initSocket(httpServer);
 
-// app.use("/api", resourceRoutes);
 
 const PORT = process.env.PORT || 8001;
 httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
-// Auto change for Wed Oct 23 2024 03:00:00 GMT+0300 (East Africa Time)
-// Auto change for Sat Nov 02 2024 03:00:00 GMT+0300 (East Africa Time)
