@@ -7,6 +7,8 @@ import dotenv from "dotenv";
 
 dotenv.config(); 
 
+const callbackURL = process.env.callbackURL ||
+
 // Serialize/deserialize
 passport.serializeUser((user, done) => done(null, user.id));
 passport.deserializeUser(async (id, done) => {
@@ -23,7 +25,7 @@ if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
       {
         clientID: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        callbackURL: "/api/auth/google/callback",
+        callbackURL: callbackURL + "/api/auth/google/callback",
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
@@ -54,7 +56,7 @@ if (!process.env.GITHUB_CLIENT_ID || !process.env.GITHUB_CLIENT_SECRET) {
     {
       clientID: process.env.GITHUB_CLIENT_ID,
       clientSecret: process.env.GITHUB_CLIENT_SECRET,
-      callbackURL: "/api/auth/github/callback",
+      callbackURL: callbackURL + "/api/auth/github/callback",
       scope: ["user:email"], // 🔑 Required to fetch emails
     },
     async (accessToken, refreshToken, profile, done) => {

@@ -21,5 +21,3 @@ const storage = cloudinaryStorage({
 });
 
 export const parser = multer({ storage });
-// Auto change for Thu Oct 24 2024 03:00:00 GMT+0300 (East Africa Time)
-// Auto change for Thu Oct 31 2024 03:00:00 GMT+0300 (East Africa Time)
