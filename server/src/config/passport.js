@@ -5,9 +5,9 @@ import crypto from "crypto"
 import User from "../models/userModel.js";
 import dotenv from "dotenv";
 
-dotenv.config(); 
+dotenv.config();
 
-const callbackURL = process.env.callbackURL ||
+const callbackURL = process.env.callbackURL || "http://localhost:8000";
 
 // Serialize/deserialize
 passport.serializeUser((user, done) => done(null, user.id));
@@ -52,42 +52,42 @@ if (!process.env.GITHUB_CLIENT_ID || !process.env.GITHUB_CLIENT_SECRET) {
   console.warn("GitHub OAuth client ID/secret not set in .env");
 } else {
   passport.use(
-  new GitHubStrategy(
-    {
-      clientID: process.env.GITHUB_CLIENT_ID,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET,
-      callbackURL: callbackURL + "/api/auth/github/callback",
-      scope: ["user:email"], // 🔑 Required to fetch emails
-    },
-    async (accessToken, refreshToken, profile, done) => {
-      try {
-        // GitHub may not return a public email
-        let email = profile.emails?.[0]?.value;
+    new GitHubStrategy(
+      {
+        clientID: process.env.GITHUB_CLIENT_ID,
+        clientSecret: process.env.GITHUB_CLIENT_SECRET,
+        callbackURL: callbackURL + "/api/auth/github/callback",
+        scope: ["user:email"], // 🔑 Required to fetch emails
+      },
+      async (accessToken, refreshToken, profile, done) => {
+        try {
+          // GitHub may not return a public email
+          let email = profile.emails?.[0]?.value;
 
-        // Fallback: generate a fake email if none exists
-        if (!email) {
-          email = `${profile.username}@users.noreply.github.com`;
-          console.warn("No public email for GitHub user, using fallback:", email);
+          // Fallback: generate a fake email if none exists
+          if (!email) {
+            email = `${profile.username}@users.noreply.github.com`;
+            console.warn("No public email for GitHub user, using fallback:", email);
+          }
+
+          // Check if user already exists
+          const existingUser = await User.findOne({ email });
+          if (existingUser) return done(null, existingUser);
+
+          // Create new user
+          const newUser = await User.create({
+            name: profile.displayName || profile.username,
+            email,
+            isVerified: true, // OAuth trusted
+            password: crypto.randomBytes(20).toString("hex"), // random password
+          });
+
+          done(null, newUser);
+        } catch (error) {
+          done(error, null);
         }
-
-        // Check if user already exists
-        const existingUser = await User.findOne({ email });
-        if (existingUser) return done(null, existingUser);
-
-        // Create new user
-        const newUser = await User.create({
-          name: profile.displayName || profile.username,
-          email,
-          isVerified: true, // OAuth trusted
-          password: crypto.randomBytes(20).toString("hex"), // random password
-        });
-
-        done(null, newUser);
-      } catch (error) {
-        done(error, null);
       }
-    }
-  )
-);
+    )
+  );
 }
 // Auto change for Sat Oct 26 2024 03:00:00 GMT+0300 (East Africa Time)

@@ -15,13 +15,13 @@ const router = express.Router();
 // ========================
 // GOOGLE AUTH
 // ========================
-router.get("/google", passport.authenticate("google", { scope: ["profile", "email"]}));
+router.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }));
 
 router.get(
   "/google/callback",
   passport.authenticate("google", { failureRedirect: "/login", session: false }),
   (req, res) => {
-    const token = jwt.sign( 
+    const token = jwt.sign(
       { id: req.user._id, email: req.user.email, role: req.user.role },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
@@ -35,7 +35,7 @@ router.get(
     });
 
     // Redirect to frontend dashboard
-    res.redirect('http://localhost:5173/');
+    res.redirect(process.env.FRONTEND_URL || 'http://localhost:5173/');
   }
 );
 
@@ -62,7 +62,7 @@ router.get(
     });
 
     // Redirect to frontend dashboard
-    res.redirect('http://localhost:5173/');
+    res.redirect(process.env.FRONTEND_URL || 'http://localhost:5173/');
   }
 );
 
