@@ -1,8 +1,11 @@
+
+
 import multer from "multer";
-import { CloudinaryStorage } from "multer-storage-cloudinary";
+
+import cloudinaryStorage from "multer-storage-cloudinary";
 import cloudinary from "./cloudinary.js";
 
-const storage = new CloudinaryStorage({
+const storage = cloudinaryStorage({
   cloudinary: cloudinary,
   params: async (req, file) => {
     let folder = "lessons";
