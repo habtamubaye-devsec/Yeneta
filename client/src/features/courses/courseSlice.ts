@@ -27,6 +27,10 @@ interface Course {
   totalDurationSeconds?: number;
   duration?: string;
   certificate?: boolean;
+  rating?: number;
+  students?: any[];
+  status?: string;
+  createdAt?: string;
 }
 
 interface CourseState {
@@ -84,7 +88,7 @@ const courseSlice = createSlice({
 
     // 🔹 Get All Courses for Admin
     builder
-      .addCase(getAllCoursesForAdmin.fulfilled, (state, action) => {  
+      .addCase(getAllCoursesForAdmin.fulfilled, (state, action) => {
         state.loading = false;
         state.courses = action.payload;
       })
@@ -125,8 +129,8 @@ const courseSlice = createSlice({
       .addCase(updateCourse.rejected, (state, action) => {
         state.error = action.payload as string;
       });
-    
-     // Toggle publish
+
+    // Toggle publish
     builder
       .addCase(requestTogglePublish.pending, (state) => {
         state.loading = true;

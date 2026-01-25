@@ -11,7 +11,7 @@ import {
   rejectCourse,
   deleteCourse,
 } from "@/features/courses/courseThunks";
-import { RootState, AppDispatch } from "@/app/store";
+import type { RootState, AppDispatch } from "@/app/store";
 import { Input, Select, Slider, Row, Col, Collapse, List } from "antd";
 
 const { Search } = Input;
@@ -119,7 +119,10 @@ export default function CourseManagement() {
       result = result.filter((course) => course.status === statusFilter);
     }
     result = result.filter(
-      (course) => course.price >= priceRange[0] && course.price <= priceRange[1]
+      (course) => {
+        const price = course.price ?? 0;
+        return price >= priceRange[0] && price <= priceRange[1];
+      }
     );
 
     result.sort((a, b) => {
@@ -127,11 +130,11 @@ export default function CourseManagement() {
       if (sortBy === "name-desc") return b.title.localeCompare(a.title);
       if (sortBy === "createdAt-asc")
         return (
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime()
         );
       if (sortBy === "createdAt-desc")
         return (
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
         );
       return 0;
     });
@@ -257,7 +260,7 @@ export default function CourseManagement() {
             </p>
           ) : (
             filteredCourses.map((course) => (
-              
+
               <Card key={course._id}>
                 <CardContent className="pt-6">
                   <div className="flex gap-4">
@@ -270,10 +273,10 @@ export default function CourseManagement() {
                       />
                       <span
                         className={`mt-1 text-xs font-semibold px-2 py-1 rounded-md text-white shadow-md ${getBadgeColor(
-                          course.status
+                          course.status || "unpublished"
                         )}`}
                       >
-                        {course.status.toUpperCase()}
+                        {(course.status || "unpublished").toUpperCase()}
                       </span>
                     </div>
 
@@ -285,7 +288,7 @@ export default function CourseManagement() {
                       </p>
                       <p className="text-sm text-muted-foreground">
                         Created:{" "}
-                        {new Date(course.createdAt).toLocaleDateString()}
+                        {course.createdAt ? new Date(course.createdAt).toLocaleDateString() : "N/A"}
                       </p>
 
                       {/* === Actions === */}
@@ -340,7 +343,7 @@ export default function CourseManagement() {
 
                       {/* === Lessons === */}
                       {Array.isArray(course.lessons) &&
-                      course.lessons.length > 0 ? (
+                        course.lessons.length > 0 ? (
                         <>
                           <h4 className="font-semibold mt-2">Lessons:</h4>
                           <List

@@ -2,15 +2,16 @@ import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom"; // <-- import useNavigate
 import { fetchCertificates } from "../../features/certificate/certificateSlice";
+import type { AppDispatch } from "@/app/store";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Award, Download, Share2 } from "lucide-react";
 
 export default function Certificates() {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate(); // <-- initialize navigate
-  
+
   const { items: certificates = [], loading, error } = useSelector(
     (state: any) => state.certificates
   );

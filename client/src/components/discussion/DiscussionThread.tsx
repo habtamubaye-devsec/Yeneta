@@ -27,10 +27,10 @@ interface Thread {
 }
 
 interface DiscussionThreadProps {
-  courseId: number;
+  courseId: string;
 }
 
-export const DiscussionThread = ({ courseId }: DiscussionThreadProps) => {
+export const DiscussionThread = ({ courseId: _courseId }: DiscussionThreadProps) => {
   const { message } = App.useApp();
 
   // Default "guest" user after removing AuthContext
@@ -86,7 +86,7 @@ export const DiscussionThread = ({ courseId }: DiscussionThreadProps) => {
     setShowNewThreadForm(false);
   };
 
-  const handlePostReply = (threadId: number) => {
+  const handlePostReply = (_threadId: number) => {
     message.success('Reply posted successfully');
     setShowReplyForm(null);
   };

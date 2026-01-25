@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import type { AppDispatch, RootState } from "@/redux/store";
+import type { AppDispatch, RootState } from "@/app/store";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, Form, Input, Select, Button, Upload, message, Image, Spin } from "antd";
 import { UploadOutlined } from "@ant-design/icons";

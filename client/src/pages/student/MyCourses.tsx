@@ -1,10 +1,10 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, Progress, Button, Tag, Spin, Empty } from "antd";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { fetchMyEnrollments } from "@/features/enrollment/enrollmentThunks"; // adjust path
-import { RootState, AppDispatch } from "@/redux/store"; // adjust your store path
+import type { RootState, AppDispatch } from "@/app/store"; // adjust your store path
 
 export default function MyCourses() {
   const dispatch = useDispatch<AppDispatch>();
@@ -33,11 +33,11 @@ export default function MyCourses() {
     <DashboardLayout>
       <div style={{ padding: 32 }}><Empty description="You have no courses yet" /></div>
     </DashboardLayout>
-  ); 
+  );
 
   // Filter courses by progress
-  const inProgress = enrollments.filter((e) => e.progress < 100);
-  const completed = enrollments.filter((e) => e.progress >= 100);
+  const inProgress = enrollments.filter((e: any) => e.progress < 100);
+  const completed = enrollments.filter((e: any) => e.progress >= 100);
 
   return (
     <DashboardLayout>
@@ -53,7 +53,7 @@ export default function MyCourses() {
             In Progress ({inProgress.length})
           </h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "16px" }}>
-            {inProgress.map((e) => {
+            {inProgress.map((e: any) => {
               const { course, lessons } = e;
               const firstLessonId = lessons?.[0]?._id || lessons?.[0];
 
@@ -106,7 +106,7 @@ export default function MyCourses() {
             Completed ({completed.length})
           </h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "16px" }}>
-            {completed.map((e) => {
+            {completed.map((e: any) => {
               const { course } = e;
               return (
                 <Card

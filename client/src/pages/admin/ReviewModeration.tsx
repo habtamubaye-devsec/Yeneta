@@ -23,7 +23,7 @@ import type { RootState, AppDispatch } from "../../app/store";
 import { StarFilled, DeleteOutlined, FlagFilled } from "@ant-design/icons";
 
 // ⭐ Fractional star rating component
-const FractionalRate = ({ value, max = 5, size = 14 }) => {
+const FractionalRate = ({ value, max = 5, size = 14 }: { value: any, max?: number, size?: number }) => {
   const stars = [];
   for (let i = 1; i <= max; i++) {
     let fillPercent = 0;

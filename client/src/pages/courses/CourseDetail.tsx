@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch, RootState } from "@/app/store";
+import type { AppDispatch, RootState } from "@/app/store";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import {
   Card,
@@ -48,7 +48,7 @@ export default function CourseDetail() {
   const { selectedCategory: category } = useSelector(
     (state: RootState) => state.categories
   );
-  const { singleCourseSummary: coursesSummary} = useSelector(
+  const { singleCourseSummary: coursesSummary } = useSelector(
     (state: RootState) => state.reviews
   );
 
@@ -76,8 +76,8 @@ export default function CourseDetail() {
     if (courseId) {
       dispatch(fetchEnrollmentByCourse(courseId));
       dispatch(getEnrollmentsLengthByCourse(courseId));
-      
-    dispatch(fetchReviewSummaryForSingleCourse(courseId));
+
+      dispatch(fetchReviewSummaryForSingleCourse(courseId));
     }
   }, [dispatch, course?._id]);
 
@@ -85,14 +85,16 @@ export default function CourseDetail() {
     if (!course) return;
     try {
       // Free course -> enroll directly
-      if (!course.price || Number(course.price) === 0) {
+      if (course._id && (!course.price || Number(course.price) === 0)) {
         await dispatch(enrollInCourse(course._id)).unwrap();
         message.success("Enrolled successfully");
         return;
       }
       // Paid course -> Stripe checkout
-      const url = await dispatch(createCheckoutSession(course._id)).unwrap();
-      if (url) window.location.href = url;
+      if (course._id) {
+        const url = await dispatch(createCheckoutSession(course._id)).unwrap();
+        if (url) window.location.href = url;
+      }
     } catch (err: any) {
       message.error(err?.message || "Payment failed");
     }
@@ -276,12 +278,12 @@ export default function CourseDetail() {
                 {
                   key: "discussion",
                   label: "Discussion",
-                  children: <DiscussionThread courseId={course._id || id} />,
+                  children: <DiscussionThread courseId={(course._id || id) as string} />,
                 },
                 {
                   key: "review",
                   label: "Review",
-                  children: <CourseReview courseId={course._id || id} />,
+                  children: <CourseReview courseId={(course._id || id) as string} />,
                 },
               ]}
             />
@@ -331,11 +333,11 @@ export default function CourseDetail() {
                           const firstLessonId = course.lessons?.[0]?._id;
                           firstLessonId
                             ? navigate(
-                                `/courses/${course._id}/lesson/${firstLessonId}`
-                              )
+                              `/courses/${course._id}/lesson/${firstLessonId}`
+                            )
                             : message.warning(
-                                "No lessons available for this course"
-                              );
+                              "No lessons available for this course"
+                            );
                         }}
                       >
                         Continue Learning

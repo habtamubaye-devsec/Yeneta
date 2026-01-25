@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Layout, Button, theme } from 'antd';
 import { GraduationCap } from 'lucide-react';
 import { useSelector } from 'react-redux';
@@ -13,7 +13,6 @@ interface PublicLayoutProps {
 
 export const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
     const { token } = useToken();
-    const _location = useLocation();
     const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
 
     return (

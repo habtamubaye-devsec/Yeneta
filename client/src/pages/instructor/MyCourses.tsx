@@ -14,7 +14,7 @@ import {
   UploadCloud,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { AppDispatch, RootState } from "@/redux/store";
+import type { AppDispatch, RootState } from "@/app/store";
 import {
   deleteCourse,
   updateCourse,
@@ -122,7 +122,7 @@ export default function MyCourses() {
   };
 
   const selectedCategoryObj = categories.find(
-    (cat) => cat._id === selectedCategory
+    (cat: any) => cat._id === selectedCategory
   );
 
   if (loading) {
@@ -157,7 +157,7 @@ export default function MyCourses() {
         {/* Course Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
           {courses.length > 0 ? (
-            courses.map((course) => (
+            courses.map((course: any) => (
               <Card
                 key={course._id}
                 className="flex flex-col gap-4 p-4 bg-white border-0 shadow-xl hover:shadow-2xl transition-shadow"
@@ -182,10 +182,10 @@ export default function MyCourses() {
                         course.status === "published"
                           ? "default"
                           : course.status === "pending"
-                          ? "secondary"
-                          : course.status === "rejected"
-                          ? "outline"
-                          : "outline"
+                            ? "secondary"
+                            : course.status === "rejected"
+                              ? "outline"
+                              : "outline"
                       }
                       className="w-fit"
                     >
@@ -310,7 +310,7 @@ export default function MyCourses() {
                 value={selectedCategory}
                 onChange={(value) => setSelectedCategory(value)}
               >
-                {categories.map((cat) => (
+                {categories.map((cat: any) => (
                   <Option key={cat._id} value={cat._id}>
                     {cat.name}
                   </Option>
@@ -325,7 +325,7 @@ export default function MyCourses() {
             >
               <Select placeholder="Select subcategory" disabled={!selectedCategory}>
                 {selectedCategoryObj?.subCategories?.length ? (
-                  selectedCategoryObj.subCategories.map((sub) => (
+                  selectedCategoryObj.subCategories.map((sub: string) => (
                     <Option key={sub} value={sub}>
                       {sub}
                     </Option>
@@ -345,7 +345,7 @@ export default function MyCourses() {
                 </div>
               )}
               <Upload beforeUpload={handleBeforeUpload} maxCount={1} accept="image/*">
-                <Button icon={<UploadOutlined />}>Upload Thumbnail</Button>
+                <Button><UploadOutlined className="mr-2" />Upload Thumbnail</Button>
               </Upload>
             </Form.Item>
 

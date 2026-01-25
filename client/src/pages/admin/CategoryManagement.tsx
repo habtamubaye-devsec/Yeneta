@@ -28,7 +28,7 @@ import {
   type Category,
 } from '../../features/categories/categoryThunks';
 import { clearSelectedCategory, setSelectedCategory } from '../../features/categories/categorySlice';
-import type { RootState, AppDispatch } from '@/store';
+import type { RootState, AppDispatch } from '@/app/store';
 
 const { Title, Text } = Typography;
 
@@ -60,7 +60,7 @@ export default function CategoryManagement() {
       return;
     }
     try {
-      await dispatch(createCategory(newCategory)).unwrap();
+      await dispatch(createCategory(newCategory as Category)).unwrap();
       setIsAddModalOpen(false);
       setNewCategory({ name: '', description: '', subCategories: [] });
       setSubCategoryInput('');
@@ -131,7 +131,7 @@ export default function CategoryManagement() {
             <List
               dataSource={categories}
               renderItem={(category) => (
-                <List.Item 
+                <List.Item
                   actions={[
                     <Button
                       key="edit"
@@ -154,7 +154,7 @@ export default function CategoryManagement() {
                     description={
                       <Text type="secondary">
                         <div className='text-justify'>
-                           <b>Subcategories: </b>{category.subCategories.map((sub) => sub).join(', ')}
+                          <b>Subcategories: </b>{(category.subCategories || []).map((sub: string) => sub).join(', ') || 'None'}
                         </div>
                         <div className='text-justify'><b>Description: </b>{category.description || 'No description'}</div>
                       </Text>

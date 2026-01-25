@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Input,
   Button,
@@ -15,7 +15,7 @@ import {
   MessageOutlined,
 } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
-import { askAssistantThunk, addUserMessage } from "../../features/GeminiAI/Gemini";
+import { askAssistantThunk, addUserMessage, type Message } from "../../features/GeminiAI/Gemini";
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -51,7 +51,7 @@ export default function GeminiChatbot() {
   const handleSend = () => {
     if (!input.trim() || loading) return;
 
-    const userMessage = {
+    const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
       content: input,
@@ -184,7 +184,8 @@ export default function GeminiChatbot() {
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 components={{
-                  code({ inline, className, children, ...props }) {
+                  code({ className, children, ...props }) {
+                    const inline = !className?.includes("language-");
                     const language = className?.replace("language-", "") || undefined;
                     return inline ? (
                       <code

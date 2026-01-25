@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchAdminDashboard } from '@/features/dashboard/dashboardThunks';
-import { RootState, AppDispatch } from '@/app/store';
+import type { RootState, AppDispatch } from '@/app/store';
 
 export default function AdminDashboard() {
   // small avatar helper: renders image when available, otherwise initials
@@ -46,7 +46,7 @@ export default function AdminDashboard() {
     dispatch(fetchAdminDashboard());
   }, [dispatch]);
   const statsFromServer = admin || {};
-   const stats = [
+  const stats = [
     { label: 'Total Users', value: String(statsFromServer.totalUsers ?? '12,456'), icon: Users, color: 'bg-blue-100 text-blue-600', change: '+12%' },
     { label: 'Total Courses', value: String(statsFromServer.totalCourses ?? '248'), icon: BookOpen, color: 'bg-purple-100 text-purple-600', change: '+5%' },
     { label: 'Total Enrollments', value: String(statsFromServer.totalEnrollments ?? '45,678'), icon: ShoppingCart, color: 'bg-green-100 text-green-600', change: '+18%' },
@@ -69,10 +69,10 @@ export default function AdminDashboard() {
     status: u.status,
     createdAt: u.createdAt,
   })) ?? [
-    { name: 'John Doe', email: 'john@example.com', role: 'student', status: 'active', createdAt: '2024-01-15' },
-    { name: 'Jane Smith', email: 'jane@example.com', role: 'instructor', status: 'pending', createdAt: '2024-01-14' },
-    { name: 'Mike Johnson', email: 'mike@example.com', role: 'student', status: 'active', createdAt: '2024-01-14' },
-  ];
+      { name: 'John Doe', email: 'john@example.com', role: 'student', status: 'active', createdAt: '2024-01-15' },
+      { name: 'Jane Smith', email: 'jane@example.com', role: 'instructor', status: 'pending', createdAt: '2024-01-14' },
+      { name: 'Mike Johnson', email: 'mike@example.com', role: 'student', status: 'active', createdAt: '2024-01-14' },
+    ];
 
   // server-side admin dashboards may not exist — we attempt to fetch via thunk above
 
@@ -197,16 +197,16 @@ export default function AdminDashboard() {
                 {(
                   statsFromServer.platformActivity
                     ? [
-                        // Use server totals as the progress max where available
-                        { label: 'New Enrollments Today', value: statsFromServer.platformActivity.newEnrollmentsToday ?? 0, max: Math.max(statsFromServer.totalEnrollments ?? 100, statsFromServer.platformActivity.newEnrollmentsToday ?? 100) },
-                        { label: 'Active Users (30d)', value: statsFromServer.platformActivity.activeUsers30d ?? 0, max: Math.max(statsFromServer.totalUsers ?? 1000, statsFromServer.platformActivity.activeUsers30d ?? 1000) },
-                        { label: 'Course Completions', value: statsFromServer.platformActivity.courseCompletions ?? 0, max: Math.max(statsFromServer.totalEnrollments ?? 50, statsFromServer.platformActivity.courseCompletions ?? 50) },
-                      ]
+                      // Use server totals as the progress max where available
+                      { label: 'New Enrollments Today', value: statsFromServer.platformActivity.newEnrollmentsToday ?? 0, max: Math.max(statsFromServer.totalEnrollments ?? 100, statsFromServer.platformActivity.newEnrollmentsToday ?? 100) },
+                      { label: 'Active Users (30d)', value: statsFromServer.platformActivity.activeUsers30d ?? 0, max: Math.max(statsFromServer.totalUsers ?? 1000, statsFromServer.platformActivity.activeUsers30d ?? 1000) },
+                      { label: 'Course Completions', value: statsFromServer.platformActivity.courseCompletions ?? 0, max: Math.max(statsFromServer.totalEnrollments ?? 50, statsFromServer.platformActivity.courseCompletions ?? 50) },
+                    ]
                     : [
-                        { label: 'New Enrollments Today', value: 45, max: statsFromServer.totalEnrollments ?? 100 },
-                        { label: 'Active Users', value: 1234, max: statsFromServer.totalUsers ?? 2000 },
-                        { label: 'Course Completions', value: 23, max: statsFromServer.totalEnrollments ?? 50 },
-                      ]
+                      { label: 'New Enrollments Today', value: 45, max: statsFromServer.totalEnrollments ?? 100 },
+                      { label: 'Active Users', value: 1234, max: statsFromServer.totalUsers ?? 2000 },
+                      { label: 'Course Completions', value: 23, max: statsFromServer.totalEnrollments ?? 50 },
+                    ]
                 ).map((item: any, i: number) => (
                   <div key={i}>
                     <div className="flex justify-between mb-2">
@@ -216,9 +216,9 @@ export default function AdminDashboard() {
                       </span>
                     </div>
                     <div className="w-full bg-muted rounded-full h-2">
-                      <div 
+                      <div
                         className="bg-primary h-2 rounded-full transition-all"
-                        style={{ width: `${Math.min(100, Math.round((item.value / (item.max||1)) * 100))}%` }}
+                        style={{ width: `${Math.min(100, Math.round((item.value / (item.max || 1)) * 100))}%` }}
                       />
                     </div>
                   </div>

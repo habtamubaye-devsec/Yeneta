@@ -6,7 +6,7 @@ import { BookOpen, Users, Star, DollarSign, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchInstructorDashboard } from '@/features/dashboard/dashboardThunks';
-import { RootState, AppDispatch } from '@/app/store';
+import type { RootState, AppDispatch } from '@/app/store';
 
 export default function InstructorDashboard() {
   const dispatch = useDispatch<AppDispatch>();
@@ -34,29 +34,29 @@ export default function InstructorDashboard() {
   const courses = (instructor?.topCourses && instructor.topCourses.length)
     ? instructor.topCourses
     : [
-      { 
-        id: 1, 
-        title: 'React Fundamentals', 
-        students: 456, 
-        rating: 4.9, 
+      {
+        id: 1,
+        title: 'React Fundamentals',
+        students: 456,
+        rating: 4.9,
         revenue: '$4,560',
         thumbnail: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400',
         status: 'published'
       },
-      { 
-        id: 2, 
-        title: 'Advanced TypeScript', 
-        students: 289, 
-        rating: 4.7, 
+      {
+        id: 2,
+        title: 'Advanced TypeScript',
+        students: 289,
+        rating: 4.7,
         revenue: '$2,890',
         thumbnail: 'https://images.unsplash.com/photo-1516116216624-53e697fedbea?w=400',
         status: 'published'
       },
-      { 
-        id: 3, 
-        title: 'Node.js Masterclass', 
-        students: 234, 
-        rating: 4.8, 
+      {
+        id: 3,
+        title: 'Node.js Masterclass',
+        students: 234,
+        rating: 4.8,
         revenue: '$2,340',
         thumbnail: 'https://images.unsplash.com/photo-1627398242454-45a1465c2479?w=400',
         status: 'draft'
@@ -77,10 +77,10 @@ export default function InstructorDashboard() {
   );
 
   // use the instructor payload (numbers are provided by server)
-  const totalCourses = instructor?.totalCourses ?? Number(stats[0].value);
-  const studentsCount = instructor?.studentsCount ?? Number(stats[1].value);
-  const totalReviews = instructor?.totalReviews ?? stats[2].value;
-  const totalEarnings = instructor?.totalEarnings ?? stats[3].value;
+  // const totalCourses = instructor?.totalCourses ?? Number(stats[0].value);
+  // const studentsCount = instructor?.studentsCount ?? Number(stats[1].value);
+  // const totalReviews = instructor?.totalReviews ?? stats[2].value;
+  // const totalEarnings = instructor?.totalEarnings ?? stats[3].value;
 
   return (
     <DashboardLayout>
@@ -101,7 +101,7 @@ export default function InstructorDashboard() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {stats.map((stat, idx) => {
+          {stats.map((stat, _idx) => {
             // pick values from backend if available
             let displayValue = stat.value;
             if (instructor) {
@@ -112,19 +112,19 @@ export default function InstructorDashboard() {
             }
             return (
               <Card key={stat.label}>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">{stat.label}</p>
-                    <p className="text-2xl font-bold mt-1">{displayValue}</p>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">{stat.label}</p>
+                      <p className="text-2xl font-bold mt-1">{displayValue}</p>
+                    </div>
+                    <stat.icon className={`h-8 w-8 ${colorClasses[stat.color]}`} />
                   </div>
-                  <stat.icon className={`h-8 w-8 ${colorClasses[stat.color]}`} />
-                </div>
-                <div className="flex items-center text-sm">
-                  <TrendingUp className={`h-4 w-4 mr-1 ${colorClasses.success}`} />
-                  <span className={`text-sm ${colorClasses.success}`}>{stat.change}</span>
-                </div>
-              </CardContent>
+                  <div className="flex items-center text-sm">
+                    <TrendingUp className={`h-4 w-4 mr-1 ${colorClasses.success}`} />
+                    <span className={`text-sm ${colorClasses.success}`}>{stat.change}</span>
+                  </div>
+                </CardContent>
               </Card>
             );
           })}
@@ -138,10 +138,10 @@ export default function InstructorDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {courses.map((course) => (
+              {courses.map((course: any) => (
                 <div key={course.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-accent transition-smooth">
-                  <img 
-                    src={course.thumbnail} 
+                  <img
+                    src={course.thumbnail}
                     alt={course.title}
                     className="w-24 h-16 object-cover rounded"
                   />
@@ -184,7 +184,7 @@ export default function InstructorDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                { (instructor?.recentEnrollments && instructor.recentEnrollments.length)
+                {(instructor?.recentEnrollments && instructor.recentEnrollments.length)
                   ? instructor.recentEnrollments.map((enroll: any) => (
                     <div key={enroll._id} className="flex items-center justify-between py-2 border-b last:border-0">
                       <div className="flex items-center gap-2">
@@ -208,7 +208,7 @@ export default function InstructorDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                { (instructor?.recentReviews && instructor.recentReviews.length)
+                {(instructor?.recentReviews && instructor.recentReviews.length)
                   ? instructor.recentReviews.map((review: any) => (
                     <div key={review._id} className="py-2 border-b last:border-0">
                       <div className="flex items-center justify-between mb-1">

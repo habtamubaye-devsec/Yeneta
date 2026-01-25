@@ -89,7 +89,7 @@ export default function UserManagement() {
       title: "Name",
       dataIndex: "name",
       key: "name",
-      fixed: "left",
+      fixed: "left" as const,
       width: 120,
       sorter: (a: any, b: any) => a.name.localeCompare(b.name),
       render: (text: string) => <b>{text}</b>,
@@ -116,7 +116,7 @@ export default function UserManagement() {
           <Select
             value={role}
             style={{ width: 140 }}
-            onChange={(val) => handleRoleChange(user._id, val)}
+            onChange={(val) => handleRoleChange(user._id, val as any)}
             options={[
               { value: "student", label: "Student" },
               { value: "instructor", label: "Instructor" },
@@ -150,12 +150,12 @@ export default function UserManagement() {
       render: (_: any, user: any) =>
         user.createdAt
           ? new Date(user.createdAt).toLocaleString("en-US", {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })
           : "N/A",
     },
     {

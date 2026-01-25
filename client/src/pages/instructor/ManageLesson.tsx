@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button, List, Card, Modal, Typography, message, Spin } from "antd";
 import { Trash2, Plus } from "lucide-react";
 import AddLessonModal from "@/components/lesson/AddLessonModal";
-import { AppDispatch, RootState } from "@/app/store";
+import type { AppDispatch, RootState } from "@/app/store";
 import { fetchLessons, createLesson, deleteLesson } from "@/features/lesson/lessonThunks";
 
 const { Title, Text } = Typography;

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { RootState, AppDispatch } from "@/app/store";
+import type { RootState, AppDispatch } from "@/app/store";
 import { fetchCourses } from "@/features/courses/courseThunks";
 import { fetchReviewSummaryForCourses } from "@/features/review/reviewThunks";
 import { fetchCategories } from "@/features/categories/categoryThunks";
@@ -76,7 +76,8 @@ export default function BrowseCourses() {
       }
 
       // Price
-      if (course.price < priceRange[0] || course.price > priceRange[1]) return false;
+      const price = course.price ?? 0;
+      if (price < priceRange[0] || price > priceRange[1]) return false;
 
       return true;
     });
@@ -158,13 +159,14 @@ export default function BrowseCourses() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCourses.length > 0 ? (
             filteredCourses.map((course) => {
-              const summary = reviewMap[course._id || course.id] || { averageRating: 0, reviewCount: 0 };
+              const courseId = (course._id || course.id) as string;
+              const summary = reviewMap[courseId] || { averageRating: 0, reviewCount: 0 };
               return (
                 <CourseCard
                   key={course._id || course.id}
-                  id={course._id || course.id}
+                  id={(course._id || course.id) as string}
                   title={course.title}
-                  instructor={course.instructor?.name || course.instructor || course.author || "Unknown"}
+                  instructor={course.instructor?.name || course.instructor || "Unknown"}
                   thumbnail={course.thumbnailUrl || course.thumbnail || "/placeholder.png"}
                   rating={summary.averageRating}
                   students={course.students?.length ?? course.enrolledCount ?? 0}
