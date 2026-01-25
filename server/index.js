@@ -8,6 +8,7 @@ import cookieParser from "cookie-parser";
 import passport from "passport";
 import session from "express-session";
 import bodyParser from "body-parser";
+import MongoStore from "connect-mongo";
 
 
 import "./src/config/passport.js"; // ✅ now env vars are defined
@@ -62,6 +63,13 @@ app.use(
     secret: process.env.SESSION_SECRET || "secret",
     resave: false,
     saveUninitialized: false,
+    store: MongoStore.create({
+      mongoUrl: process.env.MONGO_URI,
+    }),
+    cookie: {
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    },
   })
 );
 
