@@ -73,6 +73,12 @@ app.use(passport.session());
 // Stripe webhook requires raw body
 app.use("/api/enrollment/webhook", bodyParser.raw({ type: "application/json" }));
 
+
+// Health check endpoint for deployment verification
+app.get("/healthz", (req, res) => {
+  res.status(200).json({ status: "ok", deployedAt: new Date().toISOString() });
+});
+
 app.get("/", (req, res) => {
   res.send("Server is running!");
 });
@@ -94,4 +100,7 @@ initSocket(httpServer);
 
 
 const PORT = process.env.PORT || 8001;
-httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+httpServer.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log("✅ Deployment successful! Health check available at /healthz");
+});
