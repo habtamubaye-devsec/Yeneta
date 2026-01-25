@@ -23,7 +23,7 @@ export const askAssistantThunk = createAsyncThunk(
 // ========================
 // SLICE
 // ========================
-interface Message {
+export interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;

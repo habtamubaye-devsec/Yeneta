@@ -32,7 +32,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const login = async (email: string, password: string, role?: UserRole) => {
+  const login = async (email: string, _password: string, role?: UserRole) => {
     // Mock login - in production, this would call your backend API
     const mockUser: User = {
       id: '1',
@@ -41,12 +41,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       role: role || 'student',
       avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
     };
-    
+
     setUser(mockUser);
     localStorage.setItem('user', JSON.stringify(mockUser));
   };
 
-  const register = async (email: string, password: string, name: string, role: UserRole) => {
+  const register = async (email: string, _password: string, name: string, role: UserRole) => {
     // Mock registration - in production, this would call your backend API
     const mockUser: User = {
       id: Math.random().toString(36).substr(2, 9),
@@ -55,7 +55,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       role,
       avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
     };
-    
+
     setUser(mockUser);
     localStorage.setItem('user', JSON.stringify(mockUser));
   };
@@ -66,13 +66,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider 
-      value={{ 
-        user, 
-        login, 
-        register, 
-        logout, 
-        isAuthenticated: !!user 
+    <AuthContext.Provider
+      value={{
+        user,
+        login,
+        register,
+        logout,
+        isAuthenticated: !!user
       }}
     >
       {children}

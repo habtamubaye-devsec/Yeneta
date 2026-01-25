@@ -3,10 +3,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Shield, Database, Settings, Activity, Server, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchSuperAdminDashboard } from '@/features/dashboard/dashboardThunks';
-import { RootState, AppDispatch } from '@/app/store';
+import type { RootState, AppDispatch } from '@/app/store';
 // axios fetch removed — we use the dashboard thunk (fetchSuperAdminDashboard)
 
 export default function SuperAdminDashboard() {
@@ -40,12 +40,11 @@ export default function SuperAdminDashboard() {
     { action: 'Database optimized', user: 'System', time: '3 hours ago', type: 'success' },
   ];
 
-  const [roleCounts, setRoleCounts] = useState<any[]>([]);
+  // const [roleCounts, setRoleCounts] = useState<any[]>([]);
 
-  // Mirror server-provided values into local roleCounts if available
-  useEffect(() => {
-    if (superAdmin?.roleCounts) setRoleCounts(superAdmin.roleCounts || []);
-  }, [superAdmin]);
+  // useEffect(() => {
+  //   if (superAdmin?.roleCounts) setRoleCounts(superAdmin.roleCounts || []);
+  // }, [superAdmin]);
 
   if (loading) return (
     <DashboardLayout>
@@ -86,7 +85,7 @@ export default function SuperAdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {systemHealth.map((metric) => (
+              {systemHealth.map((metric: any) => (
                 <div key={metric.name}>
                   <div className="flex justify-between mb-2">
                     <span className="text-sm font-medium">{metric.name}</span>
@@ -97,10 +96,9 @@ export default function SuperAdminDashboard() {
                     </span>
                   </div>
                   <div className="w-full bg-muted rounded-full h-2">
-                    <div 
-                      className={`h-2 rounded-full transition-all ${
-                        metric.status === 'good' ? 'bg-success' : 'bg-warning'
-                      }`}
+                    <div
+                      className={`h-2 rounded-full transition-all ${metric.status === 'good' ? 'bg-success' : 'bg-warning'
+                        }`}
                       style={{ width: `${metric.percentage}%` }}
                     />
                   </div>
@@ -144,16 +142,15 @@ export default function SuperAdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {recentActions.map((item, i) => (
+                {recentActions.map((item: any, i: number) => (
                   <div key={i} className="flex items-start gap-3 p-3 border rounded-lg">
-                    <div className={`p-2 rounded-full ${
-                      item.type === 'success' ? 'bg-success/20' :
+                    <div className={`p-2 rounded-full ${item.type === 'success' ? 'bg-success/20' :
                       item.type === 'warning' ? 'bg-warning/20' :
-                      'bg-primary/20'
-                    }`}>
+                        'bg-primary/20'
+                      }`}>
                       {item.type === 'success' ? <Shield className="h-4 w-4 text-success" /> :
-                       item.type === 'warning' ? <AlertTriangle className="h-4 w-4 text-warning" /> :
-                       <Activity className="h-4 w-4 text-primary" />}
+                        item.type === 'warning' ? <AlertTriangle className="h-4 w-4 text-warning" /> :
+                          <Activity className="h-4 w-4 text-primary" />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium">{item.action}</p>

@@ -13,7 +13,7 @@ interface PublicLayoutProps {
 
 export const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
     const { token } = useToken();
-    const location = useLocation();
+    const _location = useLocation();
     const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
 
     return (

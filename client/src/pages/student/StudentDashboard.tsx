@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { fetchMyEnrollments } from '@/features/enrollment/enrollmentThunks';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchStudentDashboard } from '@/features/dashboard/dashboardThunks';
-import { RootState, AppDispatch } from '@/app/store';
+import type { RootState, AppDispatch } from '@/app/store';
 import { BookOutlined, TrophyOutlined, ClockCircleOutlined, RiseOutlined } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
 
@@ -105,12 +105,12 @@ export default function StudentDashboard() {
               <Button type="text">View All</Button>
             </Link>
           </div>
-          
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
             {(enrolledCourses.length ? enrolledCourses : enrolledCoursesFallback).map((course) => (
               <Card key={course.id} hoverable cover={<img alt={course.title} src={course.thumbnail} style={{ height: '192px', objectFit: 'cover' }} />}>
-                <Card.Meta 
-                  title={course.title} 
+                <Card.Meta
+                  title={course.title}
                   description={course.instructor}
                   style={{ marginBottom: '16px' }}
                 />
@@ -141,8 +141,8 @@ export default function StudentDashboard() {
                   <Button type="primary">Explore Courses</Button>
                 </Link>
               </div>
-              <img 
-                src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=300" 
+              <img
+                src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=300"
                 alt="Coding"
                 style={{ width: '192px', height: '128px', objectFit: 'cover', borderRadius: '12px', display: 'block' }}
               />

@@ -27,7 +27,7 @@ export const CourseReview = ({ courseId }: CourseReviewProps) => {
   const dispatch = useDispatch<any>();
   const { message } = App.useApp();
 
-  const { courseReviews, loading } = useSelector((state: RootState) => ({
+  const { loading } = useSelector((state: RootState) => ({
     courseReviews: state.reviews.courseReviews ?? [],
     loading: state.reviews.loading,
   }));

@@ -13,21 +13,21 @@ import {
 } from "antd";
 import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { fetchMyReviews, updateReview, deleteReview } from "@/features/review/reviewThunks";
-import { RootState, AppDispatch } from "@/store";
+import type { RootState, AppDispatch } from "@/app/store";
 
 const { Text, Title } = Typography;
 const { TextArea } = Input;
 
 export default function Reviews() {
   const dispatch = useDispatch<AppDispatch>();
-  const { myReviews, loading } = useSelector((state: RootState) => state.reviews);
+  const { loading } = useSelector((state: RootState) => state.reviews);
 
   const [editingReview, setEditingReview] = useState<any>(null);
   const [localReviews, setLocalReviews] = useState<any[]>([]);
 
   // Fetch my reviews once
   useEffect(() => {
-    dispatch(fetchMyReviews()).then((res) => {
+    dispatch(fetchMyReviews()).then((res: any) => {
       if (res.meta.requestStatus === "fulfilled") {
         setLocalReviews(res.payload); // store locally for instant updates
       }
@@ -42,7 +42,7 @@ export default function Reviews() {
       setLocalReviews((prev) => prev.filter((r) => r._id !== reviewId));
       if (editingReview?._id === reviewId) setEditingReview(null);
     } else {
-      message.error(result.payload || "Failed to delete review");
+      message.error((result.payload as string) || "Failed to delete review");
     }
   };
 

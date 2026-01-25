@@ -1,4 +1,4 @@
-import { ThemeConfig } from 'antd';
+import type { ThemeConfig } from 'antd';
 
 // Convert HSL to RGB for antd
 const hslToRgb = (h: number, s: number, l: number): string => {
@@ -18,15 +18,15 @@ export const antdTheme: ThemeConfig = {
     colorWarning: hslToRgb(38, 92, 50),
     colorError: hslToRgb(0, 84, 60),
     colorInfo: hslToRgb(221, 83, 53),
-    
+
     // Background and text
     colorBgBase: hslToRgb(0, 0, 100),
     colorTextBase: hslToRgb(222, 47, 11),
-    
+
     // Border and radius
     borderRadius: 12,
     colorBorder: hslToRgb(214, 32, 91),
-    
+
     // Font
     fontSize: 14,
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',

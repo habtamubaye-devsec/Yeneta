@@ -17,6 +17,9 @@ interface User {
   status?: "active" | "banned";
   isVerified?: boolean;
   isApproved?: boolean;
+  bio?: string;
+  profileImage?: string;
+  requestedToBeInstructor?: string;
 }
 
 interface PendingVerification {

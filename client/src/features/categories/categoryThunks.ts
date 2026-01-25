@@ -5,7 +5,7 @@ export interface Category {
   _id?: string;
   name: string;
   description?: string;
-  subcategories?: string[];
+  subCategories?: string[];
 }
 
 const API_URL = "/api/categories";
@@ -66,7 +66,7 @@ export const updateCategory = createAsyncThunk<
     const token = localStorage.getItem("token");
     const response = await api.patch(`${API_URL}/${id}`, updates, {
       headers: { Authorization: `Bearer ${token}` },
-        withCredentials: true,
+      withCredentials: true,
     });
     return response.data.data;
   } catch (err: any) {

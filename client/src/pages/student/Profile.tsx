@@ -8,8 +8,7 @@ import {
   updateUserProfile,
   requestInstructor,
 } from "@/features/user/userThunks";
-import {fetchCurrentUser} from  '../../features/auth/authThunks'
-import { RootState } from "@/app/store";
+import type { RootState } from "@/app/store";
 
 const { TextArea } = Input;
 
@@ -34,9 +33,9 @@ export default function Profile() {
     }
   }, [user, form]);
 
-   const handleRequestInstructor = async () => {
+  const handleRequestInstructor = async () => {
     try {
-      if (user.role !== "student") {
+      if (user?.role !== "student") {
         return message.warning("Only students can request to become instructors.");
       }
 
@@ -77,7 +76,7 @@ export default function Profile() {
         message.success("Password updated successfully!");
         passwordForm.resetFields();
       })
-      .catch((err) => message.error(err));
+      .catch((err: any) => message.error(err));
   };
 
   if (!user) return <p>Loading...</p>;
