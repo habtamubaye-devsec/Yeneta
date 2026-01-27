@@ -121,7 +121,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
       key: "profile",
       icon: <UserOutlined />,
       label: "Profile",
-      onClick: () => navigate(`/${user.role}/profile`),
+      onClick: () => navigate(`/${user?.role}/profile`),
     },
     {
       key: "settings",
