@@ -12,7 +12,7 @@ import { markNotificationAsRead } from "@/features/notifications/notificationThu
 
 const { Text } = Typography;
 
-export default function NotificationBell() {
+export default function NotificationBell({ size = 20 }: { size?: number }) {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
@@ -74,7 +74,7 @@ export default function NotificationBell() {
       )}
     >
       <Badge count={unreadCount} size="small" overflowCount={99}>
-        <Button type="text" icon={<BellOutlined style={{ color: "#1e293b" }} />} />
+        <Button type="text" icon={<BellOutlined style={{ color: "#1e293b", fontSize: size, }} />} />
       </Badge>
     </Dropdown>
   );

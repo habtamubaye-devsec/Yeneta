@@ -157,7 +157,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
         >
           <div
             style={{
-              padding: "40px 10px",
+              padding: "20px 10px",
               margin: 10,
               display: "flex",
               alignItems: "center",
@@ -210,7 +210,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
               gap: 8,
               marginBottom: 16,
               borderBottom: "1px solid hsl(222 47% 20%)",
-              paddingBottom: 10,
+              padding: "15px 10px",
             }}
           >
             <GraduationCap size={26} style={{ color: "hsl(221 83% 53%)" }} />
@@ -266,7 +266,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
           />
 
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <NotificationBell />
+            <NotificationBell size={20} />
             <Dropdown menu={{ items: profileMenuItems }} placement="bottomRight" trigger={["click"]}>
               <Avatar
                 size="small"
