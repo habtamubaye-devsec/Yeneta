@@ -39,7 +39,7 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       {/* 🔹 Navigation */}
       <nav className="border-b">
         <div className="container mx-auto px-4 py-4">
@@ -52,10 +52,10 @@ const Index = () => {
               <span className="text-2xl font-bold">LearnHub</span>
             </Link>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               {user && isAuthenticated ? (
                 <>
-                  <Link to="/courses">
+                  <Link to="/courses" className="hidden sm:inline-block">
                     <Button type="text">Browse Courses</Button>
                   </Link>
                   <Link to={`/${user?.role || 'student'}`}>
@@ -109,21 +109,21 @@ const Index = () => {
               Access thousands of courses from expert instructors. Learn at your
               own pace, anywhere, anytime.
             </p>
-            <div className="flex items-center justify-center gap-4">
-              <Link to="/register">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link to="/register" className="w-full sm:w-auto">
                 <Button
                   size="large"
                   type="default"
-                  className="text-lg px-8"
+                  className="text-lg w-full px-8"
                   style={{ height: 'auto', padding: '12px 32px' }}
                 >
                   Start Learning Today
                 </Button>
               </Link>
-              <Link to="/courses">
+              <Link to="/courses" className="w-full sm:w-auto">
                 <Button
                   size="large"
-                  className="text-lg px-8"
+                  className="text-lg w-full px-8"
                   style={{
                     height: 'auto',
                     padding: '12px 32px',

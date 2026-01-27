@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
+import type { RootState, AppDispatch } from "@/app/store";
 import { Layout, Menu, Button, Avatar, Drawer, Dropdown } from "antd";
 import {
   DashboardOutlined,
@@ -34,11 +35,11 @@ interface DashboardLayoutProps {
 
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const { user } = useSelector((state: any) => state.auth);
+  const dispatch = useDispatch<AppDispatch>();
+  const { user } = useSelector((state: RootState) => state.auth);
 
-  const [collapsed, setCollapsed] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const [collapsed, setCollapsed] = useState(window.innerWidth <= 992);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 992);
   const [drawerVisible, setDrawerVisible] = useState(false);
 
   const drawerBg = "hsl(222 47% 11%)"; // Dark uniform drawer bg
@@ -56,9 +57,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
 
   const handleResize = () => {
     const width = window.innerWidth;
-    setIsMobile(width <= 500);
+    setIsMobile(width <= 992);
 
-    if (width <= 820) setCollapsed(true);
+    if (width <= 992) setCollapsed(true);
     else setCollapsed(false);
   };
 
@@ -93,7 +94,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
         return [
           ...baseItems,
           { key: "/admin/users", icon: <TeamOutlined />, label: "User Management" },
-          { key: "/admin/approve-instructor",icon: <CheckCircleOutlined />,label: "Approve Instructor"},
+          { key: "/admin/approve-instructor", icon: <CheckCircleOutlined />, label: "Approve Instructor" },
           { key: "/admin/courses", icon: <BookOutlined />, label: "Course Management" },
           { key: "/admin/reviews", icon: <StarOutlined />, label: "Review Moderation" },
           { key: "/admin/categories", icon: <FolderOpenOutlined />, label: "Categories" },
@@ -103,7 +104,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
         return [
           ...baseItems,
           { key: "/admin/users", icon: <TeamOutlined />, label: "User Management" },
-          { key: "/admin/approve-instructor",icon: <CheckCircleOutlined />,label: "Approve Instructor"},
+          { key: "/admin/approve-instructor", icon: <CheckCircleOutlined />, label: "Approve Instructor" },
           { key: "/admin/courses", icon: <BookOutlined />, label: "Course Management" },
           { key: "/admin/reviews", icon: <StarOutlined />, label: "Review Moderation" },
           { key: "/admin/categories", icon: <FolderOpenOutlined />, label: "Categories" },
@@ -156,7 +157,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
         >
           <div
             style={{
-              padding: "20px 10px",
+              padding: "40px 10px",
               margin: 10,
               display: "flex",
               alignItems: "center",
@@ -197,8 +198,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
           onClose={() => setDrawerVisible(false)}
           closeIcon={false}
           width={220}
-          bodyStyle={{ background: drawerBg, padding: "10px" }}
-          headerStyle={{ background: drawerBg }}
+          styles={{
+            body: { background: drawerBg, padding: "10px" },
+            header: { background: drawerBg }
+          }}
         >
           <div
             style={{
@@ -240,7 +243,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
         <Header
           style={{
             background: "#ffffff",
-            padding: "0 24px",
+            padding: isMobile ? "0 12px" : "0 24px",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
@@ -254,7 +257,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
             type="text"
             icon={
               <MenuOutlined
-                style={{ color: "#1e293b"}}
+                style={{ color: "#1e293b" }}
               />
             }
             onClick={() =>
@@ -279,7 +282,12 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
           </div>
         </Header>
 
-        <Content style={{ margin: 24, minHeight: 280 }}>{children}</Content>
+        <Content style={{
+          margin: isMobile ? "16px 12px" : "24px",
+          minHeight: 280
+        }}>
+          {children}
+        </Content>
       </Layout>
 
       <GeminiChatbot />

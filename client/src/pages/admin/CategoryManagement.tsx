@@ -43,6 +43,13 @@ export default function CategoryManagement() {
   const [newCategory, setNewCategory] = useState<Partial<Category>>({ name: '', description: '', subCategories: [] });
   const [subCategoryInput, setSubCategoryInput] = useState('');
   const [editSubCategoryInput, setEditSubCategoryInput] = useState('');
+  const [isMobileLayout, setIsMobileLayout] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobileLayout(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Fetch categories on mount
   useEffect(() => {
@@ -112,14 +119,14 @@ export default function CategoryManagement() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 max-w-4xl mx-auto">
-        <div className="flex flex-wrap items-center justify-between mb-6 gap-2">
+      <div className="space-y-6 w-full lg:max-w-5xl mx-auto px-1 sm:px-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
-            <Title level={2}>Category Management</Title>
+            <Title level={isMobileLayout ? 3 : 2} style={{ margin: 0 }}>Category Management</Title>
             <Text type="secondary">Organize courses into categories</Text>
           </div>
 
-          <Button type="primary" icon={<PlusOutlined />} onClick={openAddModal}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={openAddModal} className="w-full sm:w-auto">
             Add Category
           </Button>
         </div>
@@ -132,6 +139,7 @@ export default function CategoryManagement() {
               dataSource={categories}
               renderItem={(category) => (
                 <List.Item
+                  className="px-0 sm:px-4"
                   actions={[
                     <Button
                       key="edit"
@@ -152,12 +160,16 @@ export default function CategoryManagement() {
                     avatar={<FolderOutlined style={{ fontSize: 20, color: '#1677ff' }} />}
                     title={<Text strong>{category.name}</Text>}
                     description={
-                      <Text type="secondary">
-                        <div className='text-justify'>
-                          <b>Subcategories: </b>{(category.subCategories || []).map((sub: string) => sub).join(', ') || 'None'}
+                      <div className="space-y-1">
+                        <div className='text-sm text-gray-500'>
+                          <span className="font-semibold">Subcategories: </span>
+                          {(category.subCategories || []).join(', ') || 'None'}
                         </div>
-                        <div className='text-justify'><b>Description: </b>{category.description || 'No description'}</div>
-                      </Text>
+                        <div className='text-sm text-gray-500'>
+                          <span className="font-semibold">Description: </span>
+                          {category.description || 'No description'}
+                        </div>
+                      </div>
                     }
                   />
                 </List.Item>

@@ -194,21 +194,22 @@ export default function UserManagement() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 px-1 sm:px-4">
         <div>
-          <h1 className="text-3xl font-bold mb-2">User Management</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2">User Management</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">
             {isSuperadmin
               ? "Manage users by role — update roles, ban/unban, or delete accounts."
               : "Manage students and instructors — ban, unban, or delete accounts."}
           </p>
         </div>
 
-        <Card title="All Users">
+        <Card title="All Users" className="shadow-sm overflow-hidden">
           {isSuperadmin && (
             <Tabs
               activeKey={activeRole}
               onChange={(key) => setActiveRole(key as any)}
+              className="mb-4"
               items={[
                 { key: "student", label: "Students" },
                 { key: "instructor", label: "Instructors" },
@@ -223,19 +224,26 @@ export default function UserManagement() {
               placeholder="Search by name or email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ maxWidth: 300 }}
+              className="w-full sm:max-w-xs"
             />
           </div>
 
-          <Table
-            rowKey="_id"
-            columns={columns}
-            dataSource={filteredUsers}
-            loading={loading}
-            pagination={{ pageSize: 7 }}
-            scroll={{ x: 1000, y: 400 }}
-            bordered
-          />
+          <div className="overflow-x-auto">
+            <Table
+              rowKey="_id"
+              columns={columns}
+              dataSource={filteredUsers}
+              loading={loading}
+              pagination={{
+                pageSize: 7,
+                size: "small",
+                responsive: true
+              }}
+              scroll={{ x: 800, y: 400 }}
+              bordered
+              size="middle"
+            />
+          </div>
         </Card>
       </div>
     </DashboardLayout>

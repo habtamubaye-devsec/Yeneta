@@ -115,15 +115,15 @@ export default function AdminDashboard() {
 
         {/* Pending Actions */}
         <Card className="border-warning">
-          <CardHeader>
+          <CardHeader className="px-4 sm:px-6">
             <div className="flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-warning" />
-              <CardTitle>Pending Actions</CardTitle>
+              <CardTitle className="text-xl sm:text-2xl">Pending Actions</CardTitle>
             </div>
             <CardDescription>Items requiring your attention</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <CardContent className="px-4 sm:px-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {pendingActions.map((action) => (
                 <div key={action.type} className="p-4 border-2 border-gray-200 shadow rounded-lg">
                   <div className="flex items-center justify-between mb-2">

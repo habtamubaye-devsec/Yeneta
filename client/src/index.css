@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+}
+
 .text-outline {
   color: white;
   text-shadow:
